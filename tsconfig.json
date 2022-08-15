@@ -1,0 +1,20 @@
+{
+	"compilerOptions": {
+		"module": "commonjs",
+		"target": "es6",
+		"lib": [
+			"dom",
+      "dom.iterable",
+      "esnext"
+		],
+		"moduleResolution": "node",
+		"esModuleInterop": true,
+		"outDir": "dist",
+		"declaration": true,
+		"strict": true,
+	},
+	"include": [
+		"src/index.ts",
+		"src/**/*"
+	]
+}

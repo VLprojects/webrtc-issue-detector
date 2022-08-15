@@ -1,0 +1,15 @@
+{
+  "extends": [
+    "../.eslintrc"
+  ],
+  "parserOptions": {
+    "project": "./tsconfig.json"
+  },
+  "rules": {
+    "max-len": "off",
+    "import/no-extraneous-dependencies": "off",
+    "import/prefer-default-export": "off",
+    "@typescript-eslint/no-unused-expressions": "off",
+    "class-methods-use-this": "off"
+  }
+}
