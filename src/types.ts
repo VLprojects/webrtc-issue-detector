@@ -58,6 +58,13 @@ export type WebRTCIssueDetectorConstructorParams = {
   getStatsInterval?: number,
 };
 
+export interface WebRTCIssueDetectorFactoryConstructorParams {
+  getStatsInterval?: number;
+  logger?: Logger;
+}
+
+export type CreateWIDPayload = Partial<Omit<WebRTCIssueDetectorConstructorParams, 'logger' | 'getStatsInterval'>>;
+
 export enum IssueType {
   Network = 'network',
   CPU = 'cpu',
