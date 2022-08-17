@@ -5,7 +5,7 @@ import {
   EventType,
   IssueDetector,
   IssuePayload,
-  NetworkScoresCalculator,
+  INetworkScoresCalculator,
   StatsReportItem,
   WebRTCIssueDetectorConstructorParams,
   WebRTCStatsParsed,
@@ -21,7 +21,7 @@ class WebRTCIssueDetector {
 
   private readonly detectors: IssueDetector[] = [];
 
-  private readonly networkScoresCalculator: NetworkScoresCalculator;
+  private readonly networkScoresCalculator: INetworkScoresCalculator;
 
   private readonly statsReporter: PeriodicWebRTCStatsReporter;
 

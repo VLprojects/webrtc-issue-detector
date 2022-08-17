@@ -2,7 +2,7 @@
 import {
   NetworkScore,
   NetworkScores,
-  NetworkScoresCalculator as INetworkScoresCalculator,
+  INetworkScoresCalculator,
   WebRTCStatsParsed,
 } from './types';
 

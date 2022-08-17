@@ -14,7 +14,7 @@ export interface IssueDetector {
   detect(data: WebRTCStatsParsed): IssueDetectorResult;
 }
 
-export interface NetworkScoresCalculator {
+export interface INetworkScoresCalculator {
   calculate(data: WebRTCStatsParsed): NetworkScores;
 }
 
@@ -47,7 +47,7 @@ export interface StatsParser {
 
 export type WebRTCIssueDetectorConstructorParams = {
   issueEmitter: WebRTCIssueEmitter;
-  networkScoresCalculator: NetworkScoresCalculator,
+  networkScoresCalculator: INetworkScoresCalculator,
   detectors: IssueDetector[],
   compositeStatsParser: CompositeStatsParser,
   statsReporter: PeriodicWebRTCStatsReporter,
