@@ -1,6 +1,6 @@
 {
   "name": "webrtc-issue-detector",
-  "version": "1.0.8",
+  "version": "1.2.0",
   "description": "WebRTC diagnostic tool that detects issues with network or user devices",
   "main": "dist/bundle-cjs.js",
   "module": "dist/bundle-esm.js",
