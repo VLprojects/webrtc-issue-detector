@@ -13,6 +13,18 @@ import {
   Logger,
 } from './types';
 import PeriodicWebRTCStatsReporter from './parser/PeriodicWebRTCStatsReporter';
+import DefaultNetworkScoresCalculator from './NetworkScoresCalculator';
+import {
+  AvailableOutgoingBitrateIssueDetector,
+  FramesDroppedIssueDetector,
+  FramesEncodedSentIssueDetector,
+  InboundNetworkIssueDetector,
+  NetworkMediaSyncIssueDetector,
+  OutboundNetworkIssueDetector,
+  QualityLimitationsIssueDetector, VideoCodecMismatchDetector,
+} from './detectors';
+import { CompositeRTCStatsParser, RTCStatsParser } from './parser';
+import createLogger from './utils/logger';
 
 class WebRTCIssueDetector {
   readonly eventEmitter: WebRTCIssueEmitter;
@@ -30,7 +42,8 @@ class WebRTCIssueDetector {
   private readonly logger: Logger;
 
   constructor(params: WebRTCIssueDetectorConstructorParams) {
-    this.eventEmitter = params.issueEmitter;
+    this.logger = params.logger ?? createLogger();
+    this.eventEmitter = params.issueEmitter ?? new WebRTCIssueEmitter();
 
     if (params.onIssues) {
       this.eventEmitter.on(EventType.Issue, params.onIssues);
@@ -40,11 +53,25 @@ class WebRTCIssueDetector {
       this.eventEmitter.on(EventType.NetworkScoresUpdated, params.onNetworkScoresUpdated);
     }
 
-    this.networkScoresCalculator = params.networkScoresCalculator;
-    this.detectors = params.detectors;
-    this.compositeStatsParser = params.compositeStatsParser;
-    this.statsReporter = params.statsReporter;
-    this.logger = params.logger;
+    this.detectors = params.detectors ?? [
+      new QualityLimitationsIssueDetector(),
+      new FramesDroppedIssueDetector(),
+      new FramesEncodedSentIssueDetector(),
+      new InboundNetworkIssueDetector(),
+      new OutboundNetworkIssueDetector(),
+      new NetworkMediaSyncIssueDetector(),
+      new AvailableOutgoingBitrateIssueDetector(),
+      new VideoCodecMismatchDetector(),
+    ];
+
+    this.networkScoresCalculator = params.networkScoresCalculator ?? new DefaultNetworkScoresCalculator();
+    this.compositeStatsParser = params.compositeStatsParser ?? new CompositeRTCStatsParser({
+      statsParser: new RTCStatsParser({ logger: this.logger }),
+    });
+    this.statsReporter = params.statsReporter ?? new PeriodicWebRTCStatsReporter({
+      compositeStatsParser: this.compositeStatsParser,
+      getStatsInterval: params.getStatsInterval ?? 5000,
+    });
 
     (window as unknown as WIDWindow).wid = this;
     this.wrapRTCPeerConnection();
