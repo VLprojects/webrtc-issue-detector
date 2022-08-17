@@ -39,6 +39,9 @@ webRtcIssueDetector.watchNewPeerConnections();
 ```
 
 ### Configure
+
+By default, WebRTCIssueDetector can be created with minimum of mandatory constructor parameters. But it's possible to override most of them.
+
 ```typescript
 import WebRTCIssueDetector, {
   QualityLimitationsIssueDetector,
@@ -49,17 +52,14 @@ import WebRTCIssueDetector, {
   NetworkMediaSyncIssueDetector,
   AvailableOutgoingBitrateIssueDetector,
   VideoCodecMismatchDetector,
-  CompositeRTCStatsParser,
-  WebRTCIssueEmitter,
-  NetworkScoresCalculator,
-  PeriodicWebRTCStatsReporter,
-  RTCStatsParser,
 } from 'webrtc-issue-detector';
 
-new WebRTCIssueDetector({
-  issueEmitter: new WebRTCIssueEmitter(),
-  networkScoresCalculator: new NetworkScoresCalculator(),
-  detectors: [
+const widWithDefaultConstructorArgs = new WebRTCIssueDetector();
+
+// or you can fully customize WebRTCIssueDetector with constructor arguments
+
+const widWithCustomConstructorArgs = new WebRTCIssueDetector({
+  detectors: [ // you are free to change the detectors list according to your needs
     new QualityLimitationsIssueDetector(),
     new FramesDroppedIssueDetector(),
     new FramesEncodedSentIssueDetector(),
@@ -69,15 +69,16 @@ new WebRTCIssueDetector({
     new AvailableOutgoingBitrateIssueDetector(),
     new VideoCodecMismatchDetector(),
   ],
-  statsReporter: new PeriodicWebRTCStatsReporter({
-    compositeStatsParser,
-    getStatsInterval: 5000,
-  }),
-  onIssues: params.onIssues,
-  onNetworkScoresUpdated: params.onNetworkScoresUpdated,
-  ignoreSSRCList: params.ignoreSSRCList,
-  compositeStatsParser,
-  logger,
+  getStatsInterval: 10_000, // set custom stats parsing interval
+  onIssues: (payload: IssueDetectorResult) => {
+    // your custom callback for detected issues handling
+  },
+  onNetworkScoresUpdated: (payload: NetworkScores) => {
+    // your custom callback for networks score updates handling
+  },
+  ignoreSSRCList: [
+    // in case you need to skip some ssrc from parsing, add its numbers to the array
+  ],
 });
 ```
 
@@ -86,105 +87,105 @@ new WebRTCIssueDetector({
 ### AvailableOutgoingBitrateIssueDetector
 Detects issues with outgoing network connection.
 ```js
-{
+const issue = {
     type: 'network',
     reason: 'outbound-network-throughput',
-    debug: '...'
+    debug: '...',
 }
 ```
 
 ### FramesDroppedIssueDetector
 Detects issues with decoder.
 ```js
-{
+const issue = {
     type: 'cpu',
     reason: 'decoder-cpu-throttling',
-    debug: '...'
+    debug: '...',
 }
 ```
 
 ### FramesEncodedSentIssueDetector
 Detects issues with outbound network throughput.
 ```js
-{
+const issue = {
     type: 'network',
     reason: 'outbound-network-throughput',
-    debug: '...'
+    debug: '...',
 }
 ```
 
 ### InboundNetworkIssueDetector
 Detects issues with inbound network connection.
 ```js
-{
+const issue = {
     type: 'network',
     reason: 'inbound-network-quality' | 'inbound-network-media-latency' | 'network-media-sync-failure',
-    iceCandidate: 'ice-candidate-id'
-    debug: '...'
+    iceCandidate: 'ice-candidate-id',
+    debug: '...',
 }
 ```
 
 Also can detect server side issues if there is high RTT and jitter is ok.
 ```js
-{
+const issue = {
     type: 'server',
     reason: 'server-issue',
-    iceCandidate: 'ice-candidate-id'
-    debug: '...'
+    iceCandidate: 'ice-candidate-id',
+    debug: '...',
 }
 ```
 
 ### NetworkMediaSyncIssueDetector
 Detects issues with audio syncronization.
 ```js
-{
+const issue = {
     type: 'network',
     reason: 'network-media-sync-failure',
-    ssrc: '...'
-    debug: '...'
+    ssrc: '...',
+    debug: '...',
 }
 ```
 
 ### OutboundNetworkIssueDetector
 Detects issues with outbound network connection.
 ```js
-{
+const issue = {
     type: 'network',
     reason: 'outbound-network-quality' | 'outbound-network-media-latency',
-    iceCandidate: 'ice-candidate-id'
-    debug: '...'
+    iceCandidate: 'ice-candidate-id',
+    debug: '...',
 }
 ```
 
 ### QualityLimitationsIssueDetector
 Detects issues with encoder and outbound network. Based on native qualitiLimitationReason.
 ```js
-{
+const issue = {
     type: 'cpu',
     reason: 'encoder-cpu-throttling',
-    ssrc: '...'
-    debug: '...'
+    ssrc: '...',
+    debug: '...',
 }
 ```
 
 ```js
-{
+const issue = {
     type: 'network',
     reason: 'outbound-network-throughput',
-    ssrc: '...'
-    debug: '...'
+    ssrc: '...',
+    debug: '...',
 }
 ```
 
 ### VideoCodecMismatchDetector
 Detects issues with decoding stream.
 ```js
-{
+const issue = {
     type: 'stream',
     reason: 'codec-mismatch',
     ssrc: '...',
     trackIdentifier: '...',
-    debug: '...'
+    debug: '...',
 }
 ```
 
