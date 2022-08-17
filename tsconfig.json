@@ -1,7 +1,7 @@
 {
 	"compilerOptions": {
-		"module": "commonjs",
-		"target": "es6",
+		"module": "esnext",
+		"target": "esnext",
 		"lib": [
 			"dom",
       "dom.iterable",
@@ -16,5 +16,5 @@
 	"include": [
 		"src/index.ts",
 		"src/**/*"
-	]
+, "rollup.config.js"	]
 }

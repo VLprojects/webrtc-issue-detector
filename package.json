@@ -2,9 +2,9 @@
   "name": "webrtc-issue-detector",
   "version": "1.0.8",
   "description": "WebRTC diagnostic tool that detects issues with network or user devices",
-  "main": "dist/index.js",
+  "main": "dist/bundle-cjs.js",
+  "module": "dist/bundle-esm.js",
   "types": "dist/index.d.ts",
-  "typings": "dist/index",
   "repository": "git@github.com:VLprojects/webrtc-issue-detector.git",
   "author": "Roman Kuzakov <roman.kuzakov@gmail.com>",
   "license": "MIT",
@@ -17,11 +17,12 @@
     "dist/"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf dist && rollup -c",
     "lint": "eslint ./src",
     "test": "NODE_ENV=test mocha --config test/utils/runners/mocha/.mocharc.js"
   },
   "devDependencies": {
+    "@rollup/plugin-typescript": "^8.3.4",
     "@types/chai": "^4.3.3",
     "@types/chai-as-promised": "^7.1.5",
     "@types/chai-subset": "^1.3.3",
@@ -42,6 +43,10 @@
     "eslint-plugin-jsx-a11y": "^6.6.1",
     "faker": "^5.5.3",
     "mocha": "^10.0.0",
+    "rollup": "^2.78.0",
+    "rollup-plugin-bundle-size": "^1.0.3",
+    "rollup-plugin-polyfill-node": "^0.10.2",
+    "rollup-plugin-terser": "^7.0.2",
     "sinon": "^14.0.0",
     "sinon-chai": "^3.7.0",
     "ts-node": "^10.9.1",
