@@ -46,12 +46,12 @@ export interface StatsParser {
 }
 
 export type WebRTCIssueDetectorConstructorParams = {
-  issueEmitter: WebRTCIssueEmitter;
-  networkScoresCalculator: INetworkScoresCalculator,
-  detectors: IssueDetector[],
-  compositeStatsParser: CompositeStatsParser,
-  statsReporter: PeriodicWebRTCStatsReporter,
-  logger: Logger,
+  issueEmitter?: WebRTCIssueEmitter;
+  networkScoresCalculator?: INetworkScoresCalculator,
+  detectors?: IssueDetector[],
+  compositeStatsParser?: CompositeStatsParser,
+  statsReporter?: PeriodicWebRTCStatsReporter,
+  logger?: Logger,
   onIssues?: (payload: IssueDetectorResult) => void,
   onNetworkScoresUpdated?: (payload: NetworkScores) => void,
   ignoreSSRCList?: number[],
