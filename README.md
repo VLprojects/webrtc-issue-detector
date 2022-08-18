@@ -1,6 +1,6 @@
 # webrtc-issue-detector
 
-Diagnostic tool for WebRTC applications that analyzes WebRTC getStats() result in realtime and generates a report on possible issues.
+Diagnostic tool for WebRTC JS applications that analyzes WebRTC getStats() result in realtime and generates a report on possible issues.
 
 
 ## Key features
