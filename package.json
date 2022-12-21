@@ -11,7 +11,8 @@
   "private": false,
   "homepage": "https://github.com/VLprojects/webrtc-issue-detector#readme",
   "keywords": [
-    "webrtc"
+    "webrtc",
+    "stats"
   ],
   "files": [
     "dist/"
@@ -30,7 +31,7 @@
     "@types/chai": "^4.3.3",
     "@types/chai-as-promised": "^7.1.5",
     "@types/chai-subset": "^1.3.3",
-    "@types/faker": "^6.6.9",
+    "@types/faker": "^5.5.9",
     "@types/mocha": "^9.1.1",
     "@types/node": "12",
     "@types/sinon": "^10.0.13",
@@ -46,7 +47,7 @@
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-jsx-a11y": "^6.6.1",
     "faker": "^5.5.3",
-    "mocha": "^10.0.0",
+    "mocha": "^10.2.0",
     "rollup": "^2.78.0",
     "rollup-plugin-bundle-size": "^1.0.3",
     "rollup-plugin-polyfill-node": "^0.10.2",
