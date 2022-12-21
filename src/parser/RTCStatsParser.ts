@@ -16,12 +16,20 @@ import {
 } from '../types';
 import { checkIsConnectionClosed, calcBitrate } from './utils';
 
+interface PrevStatsItem {
+  stats: WebRTCStatsParsed;
+  ts: number;
+}
+
 interface WebRTCStatsParserParams {
   logger: Logger;
+  prevConnectionStatsTtlMs?: number;
 }
 
 class RTCStatsParser implements StatsParser {
-  private readonly prevStats = new Map<string, { stats: WebRTCStatsParsed, ts: number } | undefined>();
+  private readonly prevStats = new Map<string, PrevStatsItem | undefined>();
+
+  private readonly prevStatsCleanupTimers = new Map<string, NodeJS.Timer>();
 
   private readonly allowedReportTypes: RTCStatsType[] = [
     'candidate-pair',
@@ -35,8 +43,15 @@ class RTCStatsParser implements StatsParser {
 
   private readonly logger: Logger;
 
+  private readonly prevConnectionStatsTtlMs: number;
+
   constructor(params: WebRTCStatsParserParams) {
     this.logger = params.logger;
+    this.prevConnectionStatsTtlMs = params.prevConnectionStatsTtlMs ?? 55_000;
+  }
+
+  get previouslyParsedStatsConnectionsIds(): string[] {
+    return [...this.prevStats.keys()];
   }
 
   async parse(connection: ConnectionInfo): Promise<StatsReportItem | undefined> {
@@ -101,16 +116,19 @@ class RTCStatsParser implements StatsParser {
       });
     });
 
-    const prevStatsData = this.prevStats.get(connectionData.id);
+    const { id: connectionId } = connectionData;
+    const prevStatsData = this.prevStats.get(connectionId);
 
     if (prevStatsData) {
       this.propagateStatsWithRateValues(mappedStats, prevStatsData.stats);
     }
 
-    this.prevStats.set(connectionData.id, {
+    this.prevStats.set(connectionId, {
       stats: mappedStats,
       ts: Date.now(),
     });
+
+    this.resetStatsCleanupTimer(connectionId);
 
     return mappedStats;
   }
@@ -268,6 +286,21 @@ class RTCStatsParser implements StatsParser {
     }
 
     return connectionStats as ParsedConnectionStats;
+  }
+
+  private resetStatsCleanupTimer(connectionId: string): void {
+    const existingTimer = this.prevStatsCleanupTimers.get(connectionId);
+
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+
+    const timer = setTimeout(() => {
+      this.prevStats.delete(connectionId);
+      this.prevStatsCleanupTimers.delete(connectionId);
+    }, this.prevConnectionStatsTtlMs);
+
+    this.prevStatsCleanupTimers.set(connectionId, timer);
   }
 }
 

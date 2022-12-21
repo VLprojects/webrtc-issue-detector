@@ -1,7 +1,8 @@
+import { beforeEach } from 'mocha';
 import sinon from 'sinon';
 import { expect } from 'chai';
 import { createPeerConnectionFake, createStatsReportItem } from '../helpers/rtc';
-import { StatsParser, StatsReportItem } from '../../src/types';
+import { StatsParser, StatsReportItem } from '../../src';
 import CompositeRTCStatsParser from '../../src/parser/CompositeRTCStatsParser';
 
 const createStatsParserFake = (): StatsParser => ({
@@ -18,6 +19,10 @@ const createCompositeStatsParser = (
 
 describe('wid/lib/parser/CompositeRTCStatsParser', () => {
   const sandbox = sinon.createSandbox();
+
+  beforeEach(() => {
+    sandbox.restore();
+  });
 
   after(() => {
     sandbox.restore();

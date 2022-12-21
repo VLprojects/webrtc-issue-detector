@@ -10,13 +10,13 @@ class NetworkScoresCalculator implements INetworkScoresCalculator {
   #lastProcessedStats: { [connectionId: string]: WebRTCStatsParsed } = {};
 
   calculate(data: WebRTCStatsParsed): NetworkScores {
-    const outbound = this.calcucateOutboundScore(data);
+    const outbound = this.calculateOutboundScore(data);
     const inbound = this.calculateInboundScore(data);
     this.#lastProcessedStats[data.connection.id] = data;
     return { outbound, inbound };
   }
 
-  private calcucateOutboundScore(data: WebRTCStatsParsed): NetworkScore | undefined {
+  private calculateOutboundScore(data: WebRTCStatsParsed): NetworkScore | undefined {
     const remoteInboundRTPStreamsStats = [
       ...data.remote?.audio.inbound || [],
       ...data.remote?.video.inbound || [],
