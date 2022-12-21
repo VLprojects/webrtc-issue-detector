@@ -11,15 +11,12 @@ const createParser = (): RTCStatsParser => new RTCStatsParser({
   logger: createLogger(),
 });
 
-const createParserPayload = (payload: Partial<ConnectionInfo> = {}): ConnectionInfo => {
-  const pc = createPeerConnectionFake({
-    getReceivers(): RTCRtpReceiver[] {
-      return [];
-    },
-    getSenders(): RTCRtpSender[] {
-      return [];
-    },
-  });
+const createParserPayload = (payload: Partial<RTCPeerConnection & { id: string }> = {}): ConnectionInfo => {
+  const pcPayload = payload;
+  pcPayload.getReceivers = () => [];
+  pcPayload.getSenders = () => [];
+
+  const pc = createPeerConnectionFake(pcPayload);
 
   return {
     pc,
@@ -58,5 +55,22 @@ describe('wid/lib/parser/RTCStatsParser', () => {
     await clock.tickAsync(55_000);
 
     expect(parser.previouslyParsedStatsConnectionsIds).to.deep.eq([]);
+  });
+
+  describe('should return undefined results', () => {
+    const cases = [
+      { title: 'when connection is closed', payload: createParserPayload({ connectionState: 'closed' }) },
+      { title: 'when ice connection is closed', payload: createParserPayload({ iceConnectionState: 'closed' }) },
+    ];
+
+    cases.forEach(({ title, payload }) => {
+      it(title, async () => {
+        const parser = createParser();
+
+        const result = await parser.parse(payload);
+
+        expect(result).to.be.undefined;
+      });
+    });
   });
 });
