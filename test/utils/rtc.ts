@@ -28,6 +28,44 @@ interface CreateStatsReportItemTestPayload {
 
 const stubFn = (): any => {};
 
+export const createRTCStatsReport = (reportItems?: Map<string, Record<string, unknown>>): RTCStatsReport => {
+  const items = reportItems ?? new Map();
+
+  return {
+    forEach: items.forEach.bind(items),
+    get(key: string): unknown {
+      return items.get(key);
+    },
+    has(key: string): boolean {
+      return items.has(key);
+    },
+    values(): IterableIterator<unknown> {
+      return items.values();
+    },
+    keys(): IterableIterator<string> {
+      return items.keys();
+    },
+    entries(): IterableIterator<[string, unknown]> {
+      return items.entries();
+    },
+    get size() {
+      return items.size;
+    },
+    [Symbol.iterator](): IterableIterator<[string, any]> {
+      return items[Symbol.iterator]();
+    },
+  };
+};
+
+export const createRTCRtpReceiver = (payload: Partial<RTCRtpReceiver> = {}): RTCRtpReceiver => ({
+  track: payload.track ?? null as unknown as MediaStreamTrack,
+  transport: payload.transport ?? null as unknown as RTCDtlsTransport,
+  getStats: payload.getStats ?? (async () => ({}) as RTCStatsReport),
+  getParameters: payload.getParameters ?? ((): RTCRtpReceiveParameters => ({}) as RTCRtpReceiveParameters),
+  getSynchronizationSources: payload.getSynchronizationSources ?? (() => []),
+  getContributingSources: payload.getContributingSources ?? (() => []),
+});
+
 export const createPeerConnectionFake = (payload: CreatePeerConnectionTestPayload = {}): RTCPeerConnection => {
   const pc: RTCPeerConnection = {
     canTrickleIceCandidates: payload.canTrickleIceCandidates ?? null,

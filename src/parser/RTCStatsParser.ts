@@ -31,7 +31,7 @@ class RTCStatsParser implements StatsParser {
 
   private readonly prevStatsCleanupTimers = new Map<string, NodeJS.Timer>();
 
-  private readonly allowedReportTypes: RTCStatsType[] = [
+  private readonly allowedReportTypes: Set<RTCStatsType> = new Set<RTCStatsType>([
     'candidate-pair',
     'inbound-rtp',
     'outbound-rtp',
@@ -39,7 +39,7 @@ class RTCStatsParser implements StatsParser {
     'remote-inbound-rtp',
     'track',
     'transport',
-  ];
+  ]);
 
   private readonly logger: Logger;
 
@@ -108,7 +108,7 @@ class RTCStatsParser implements StatsParser {
 
     reports.forEach((rtcStats: RTCStatsReport) => {
       rtcStats.forEach((reportItem: Record<string, unknown>) => {
-        if (!this.allowedReportTypes.includes(reportItem.type as RTCStatsType)) {
+        if (!this.allowedReportTypes.has(reportItem.type as RTCStatsType)) {
           return;
         }
 
