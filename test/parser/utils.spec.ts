@@ -5,7 +5,7 @@ import {
   calcValueRate,
   checkIsConnectionClosed,
 } from '../../src/parser/utils';
-import { createPeerConnectionFake } from '../helpers/rtc';
+import { createPeerConnectionFake } from '../utils/rtc';
 
 type FakeStats = Record<string, unknown> & { timestamp: number };
 

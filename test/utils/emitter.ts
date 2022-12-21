@@ -1,3 +1,3 @@
-import EnhancedEventEmitter from '../../src/EnhancedEventEmitter';
+import { EventEmitter } from 'events';
 
-export const createEventEmitter = () => new EnhancedEventEmitter();
+export const createEventEmitter = () => new EventEmitter();

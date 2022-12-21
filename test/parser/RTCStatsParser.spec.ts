@@ -5,7 +5,7 @@ import { expect } from 'chai';
 import RTCStatsParser from '../../src/parser/RTCStatsParser';
 import createLogger from '../../src/utils/logger';
 import { ConnectionInfo } from '../../src';
-import { createPeerConnectionFake } from '../helpers/rtc';
+import { createPeerConnectionFake } from '../utils/rtc';
 
 const createParser = (): RTCStatsParser => new RTCStatsParser({
   logger: createLogger(),

@@ -1,8 +1,8 @@
 import faker from 'faker';
 import sinon, { SinonFakeTimers } from 'sinon';
 import { expect } from 'chai';
-import { StatsReportItem, CompositeStatsParser } from '../../src/types';
-import { createStatsReportItem } from '../helpers/rtc';
+import { StatsReportItem, CompositeStatsParser } from '../../src';
+import { createStatsReportItem } from '../utils/rtc';
 import PeriodicWebRTCStatsReporter from '../../src/parser/PeriodicWebRTCStatsReporter';
 
 const createCompositeStatsParserFake = (): CompositeStatsParser => ({

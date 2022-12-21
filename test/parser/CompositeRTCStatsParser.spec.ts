@@ -1,7 +1,7 @@
 import { beforeEach } from 'mocha';
 import sinon from 'sinon';
 import { expect } from 'chai';
-import { createPeerConnectionFake, createStatsReportItem } from '../helpers/rtc';
+import { createPeerConnectionFake, createStatsReportItem } from '../utils/rtc';
 import { StatsParser, StatsReportItem } from '../../src';
 import CompositeRTCStatsParser from '../../src/parser/CompositeRTCStatsParser';
 

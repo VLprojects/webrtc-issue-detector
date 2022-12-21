@@ -20,6 +20,7 @@
   "scripts": {
     "build": "rm -rf dist && rollup -c",
     "lint": "eslint ./src",
+    "lint:tests": "cd test && eslint ./",
     "test": "NODE_ENV=test mocha --config test/utils/runners/mocha/.mocharc.js"
   },
   "devDependencies": {
