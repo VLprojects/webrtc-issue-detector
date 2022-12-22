@@ -7,12 +7,28 @@
   "types": "dist/index.d.ts",
   "repository": "git@github.com:VLprojects/webrtc-issue-detector.git",
   "author": "Roman Kuzakov <roman.kuzakov@gmail.com>",
+  "maintainers": [
+    {
+      "name": "Vladimir Panov",
+      "email": "panov.va@mail.ru",
+      "url": "https://github.com/panov-va"
+    },
+    {
+      "name": "Evgeny Melnikov",
+      "email": "melnikov_evg@mail.ru",
+      "url": "https://github.com/evgmel"
+    }
+  ],
   "license": "MIT",
   "private": false,
   "homepage": "https://github.com/VLprojects/webrtc-issue-detector#readme",
   "keywords": [
     "webrtc",
-    "stats"
+    "stats",
+    "rtcstatsreport",
+    "network",
+    "issues",
+    "mos calculator"
   ],
   "files": [
     "dist/"
