@@ -5,6 +5,8 @@ import {
   IssueType,
   WebRTCStatsParsed,
 } from '../types';
+import { scheduleTask } from '../utils/tasks';
+import { CLEANUP_PREV_STATS_TTL_MS } from '../utils/constants';
 
 class FramesDroppedIssueDetector implements IssueDetector {
   #lastProcessedStats: { [connectionId: string]: WebRTCStatsParsed | undefined } = {};
@@ -12,8 +14,16 @@ class FramesDroppedIssueDetector implements IssueDetector {
   #framesDroppedThreshold = 0.5;
 
   detect(data: WebRTCStatsParsed): IssueDetectorResult {
+    const { connection: { id: connectionId } } = data;
     const issues = this.processData(data);
-    this.#lastProcessedStats[data.connection.id] = data;
+    this.#lastProcessedStats[connectionId] = data;
+
+    scheduleTask({
+      taskId: connectionId,
+      delayMs: CLEANUP_PREV_STATS_TTL_MS,
+      callback: () => (delete this.#lastProcessedStats[connectionId]),
+    });
+
     return issues;
   }
 
