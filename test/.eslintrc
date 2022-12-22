@@ -11,5 +11,8 @@
     "import/prefer-default-export": "off",
     "@typescript-eslint/no-unused-expressions": "off",
     "class-methods-use-this": "off"
-  }
+  },
+  "ignorePatterns": [
+    "**/*.js"
+  ]
 }

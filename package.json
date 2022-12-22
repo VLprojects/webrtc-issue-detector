@@ -7,11 +7,28 @@
   "types": "dist/index.d.ts",
   "repository": "git@github.com:VLprojects/webrtc-issue-detector.git",
   "author": "Roman Kuzakov <roman.kuzakov@gmail.com>",
+  "maintainers": [
+    {
+      "name": "Vladimir Panov",
+      "email": "panov.va@mail.ru",
+      "url": "https://github.com/panov-va"
+    },
+    {
+      "name": "Evgeny Melnikov",
+      "email": "melnikov_evg@mail.ru",
+      "url": "https://github.com/evgmel"
+    }
+  ],
   "license": "MIT",
   "private": false,
   "homepage": "https://github.com/VLprojects/webrtc-issue-detector#readme",
   "keywords": [
-    "webrtc"
+    "webrtc",
+    "stats",
+    "rtcstatsreport",
+    "network",
+    "issues",
+    "mos calculator"
   ],
   "files": [
     "dist/"
@@ -19,6 +36,7 @@
   "scripts": {
     "build": "rm -rf dist && rollup -c",
     "lint": "eslint ./src",
+    "lint:tests": "cd test && eslint ./",
     "test": "NODE_ENV=test mocha --config test/utils/runners/mocha/.mocharc.js"
   },
   "devDependencies": {
@@ -30,7 +48,7 @@
     "@types/chai": "^4.3.3",
     "@types/chai-as-promised": "^7.1.5",
     "@types/chai-subset": "^1.3.3",
-    "@types/faker": "^6.6.9",
+    "@types/faker": "^5.5.9",
     "@types/mocha": "^9.1.1",
     "@types/node": "12",
     "@types/sinon": "^10.0.13",
@@ -46,7 +64,7 @@
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-jsx-a11y": "^6.6.1",
     "faker": "^5.5.3",
-    "mocha": "^10.0.0",
+    "mocha": "^10.2.0",
     "rollup": "^2.78.0",
     "rollup-plugin-bundle-size": "^1.0.3",
     "rollup-plugin-polyfill-node": "^0.10.2",
