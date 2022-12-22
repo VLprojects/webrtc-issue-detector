@@ -9,7 +9,7 @@ import {
 class FramesDroppedIssueDetector implements IssueDetector {
   #lastProcessedStats: { [connectionId: string]: WebRTCStatsParsed } = {};
 
-  #framesDroppedTreshold = 0.5;
+  #framesDroppedThreshold = 0.5;
 
   detect(data: WebRTCStatsParsed): IssueDetectorResult {
     const issues = this.processData(data);
@@ -46,7 +46,7 @@ class FramesDroppedIssueDetector implements IssueDetector {
       }
 
       const framesDropped = deltaFramesDropped / deltaFramesReceived;
-      if (framesDropped >= this.#framesDroppedTreshold) {
+      if (framesDropped >= this.#framesDroppedThreshold) {
         // more than half of the received frames were dropped
         issues.push({
           type: IssueType.CPU,

@@ -9,7 +9,7 @@ import {
 class FramesEncodedSentIssueDetector implements IssueDetector {
   #lastProcessedStats: { [connectionId: string]: WebRTCStatsParsed } = {};
 
-  #missedFramesTreshold = 0.15;
+  #missedFramesThreshold = 0.15;
 
   detect(data: WebRTCStatsParsed): IssueDetectorResult {
     const issues = this.processData(data);
@@ -52,7 +52,7 @@ class FramesEncodedSentIssueDetector implements IssueDetector {
       }
 
       const missedFrames = deltaFramesSent / deltaFramesEncoded;
-      if (missedFrames >= this.#missedFramesTreshold) {
+      if (missedFrames >= this.#missedFramesThreshold) {
         issues.push({
           type: IssueType.Network,
           reason: IssueReason.OutboundNetworkThroughput,

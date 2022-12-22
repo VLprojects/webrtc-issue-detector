@@ -1,7 +1,7 @@
 import faker from 'faker';
 import { expect } from 'chai';
 import VideoCodecMismatchDetector from '../../src/detectors/VideoCodecMismatchDetector';
-import { ParsedInboundVideoStreamStats, WebRTCStatsParsed } from '../../src/types';
+import { ParsedInboundVideoStreamStats, WebRTCStatsParsed } from '../../src';
 
 interface CreateStatsForDetectorTestPayload {
   connectionId?: string;
