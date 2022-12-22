@@ -7,7 +7,7 @@ import {
 } from '../types';
 
 class InboundNetworkIssueDetector implements IssueDetector {
-  #lastProcessedStats: { [connectionId: string]: WebRTCStatsParsed } = {};
+  #lastProcessedStats: { [connectionId: string]: WebRTCStatsParsed | undefined } = {};
 
   detect(data: WebRTCStatsParsed): IssueDetectorResult {
     const issues = this.processData(data);

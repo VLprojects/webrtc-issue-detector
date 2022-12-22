@@ -7,7 +7,7 @@ import {
 } from '../types';
 
 class FramesEncodedSentIssueDetector implements IssueDetector {
-  #lastProcessedStats: { [connectionId: string]: WebRTCStatsParsed } = {};
+  #lastProcessedStats: { [connectionId: string]: WebRTCStatsParsed | undefined } = {};
 
   #missedFramesThreshold = 0.15;
 

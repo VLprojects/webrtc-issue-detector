@@ -7,7 +7,7 @@ import {
 } from '../types';
 
 class FramesDroppedIssueDetector implements IssueDetector {
-  #lastProcessedStats: { [connectionId: string]: WebRTCStatsParsed } = {};
+  #lastProcessedStats: { [connectionId: string]: WebRTCStatsParsed | undefined } = {};
 
   #framesDroppedThreshold = 0.5;
 
