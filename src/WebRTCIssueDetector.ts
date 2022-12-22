@@ -3,14 +3,14 @@ import {
   CompositeStatsParser,
   DetectIssuesPayload,
   EventType,
+  INetworkScoresCalculator,
   IssueDetector,
   IssuePayload,
-  INetworkScoresCalculator,
+  Logger,
   StatsReportItem,
   WebRTCIssueDetectorConstructorParams,
   WebRTCStatsParsed,
   WIDWindow,
-  Logger,
 } from './types';
 import PeriodicWebRTCStatsReporter from './parser/PeriodicWebRTCStatsReporter';
 import DefaultNetworkScoresCalculator from './NetworkScoresCalculator';
@@ -21,7 +21,8 @@ import {
   InboundNetworkIssueDetector,
   NetworkMediaSyncIssueDetector,
   OutboundNetworkIssueDetector,
-  QualityLimitationsIssueDetector, VideoCodecMismatchDetector,
+  QualityLimitationsIssueDetector,
+  VideoCodecMismatchDetector,
 } from './detectors';
 import { CompositeRTCStatsParser, RTCStatsParser } from './parser';
 import createLogger from './utils/logger';
@@ -83,6 +84,13 @@ class WebRTCIssueDetector {
       });
 
       this.calculateNetworkScores(report.stats);
+    });
+
+    this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORTS_PARSED, (data: { timeTaken: number }) => {
+      this.eventEmitter.emit(EventType.StatsParsingFinished, {
+        timeTaken: data.timeTaken,
+        ts: Date.now(),
+      });
     });
   }
 
