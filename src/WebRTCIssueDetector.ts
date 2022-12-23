@@ -78,21 +78,12 @@ class WebRTCIssueDetector {
     this.wrapRTCPeerConnection();
 
     this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORT_READY_EVENT, (report: StatsReportItem) => {
-      const detectStartedAt = Date.now();
-
       this.detectIssues({
         data: report.stats,
         ignoreSSRCList: params.ignoreSSRCList,
       });
 
-      const detectFinishedAt = Date.now();
-
       this.calculateNetworkScores(report.stats);
-
-      this.logger.debug('Reporter report item processing finished', {
-        detectIssuesTimeMs: detectFinishedAt - detectStartedAt,
-        networkScoreCalcTimeMs: Date.now() - detectFinishedAt,
-      });
     });
 
     this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORTS_PARSED, (data: { timeTaken: number }) => {
@@ -100,8 +91,6 @@ class WebRTCIssueDetector {
         timeTaken: data.timeTaken,
         ts: Date.now(),
       };
-
-      this.logger.debug('WID reports parsed', payload);
 
       this.eventEmitter.emit(EventType.StatsParsingFinished, payload);
     });
@@ -168,6 +157,7 @@ class WebRTCIssueDetector {
 
   private wrapRTCPeerConnection(): void {
     if (!window.RTCPeerConnection) {
+      this.logger.warn('No RTCPeerConnection found in browser window. Skipping');
       return;
     }
 
