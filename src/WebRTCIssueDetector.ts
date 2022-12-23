@@ -78,19 +78,32 @@ class WebRTCIssueDetector {
     this.wrapRTCPeerConnection();
 
     this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORT_READY_EVENT, (report: StatsReportItem) => {
+      const detectStartedAt = Date.now();
+
       this.detectIssues({
         data: report.stats,
         ignoreSSRCList: params.ignoreSSRCList,
       });
 
+      const detectFinishedAt = Date.now();
+
       this.calculateNetworkScores(report.stats);
+
+      this.logger.debug('Reporter report item processing finished', {
+        detectIssuesTimeMs: detectFinishedAt - detectStartedAt,
+        networkScoreCalcTimeMs: Date.now() - detectFinishedAt,
+      });
     });
 
     this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORTS_PARSED, (data: { timeTaken: number }) => {
-      this.eventEmitter.emit(EventType.StatsParsingFinished, {
+      const payload = {
         timeTaken: data.timeTaken,
         ts: Date.now(),
-      });
+      };
+
+      this.logger.debug('WID reports parsed', payload);
+
+      this.eventEmitter.emit(EventType.StatsParsingFinished, payload);
     });
   }
 
@@ -98,6 +111,8 @@ class WebRTCIssueDetector {
     if (this.#running) {
       throw new Error('WebRTCIssueDetector is already started');
     }
+
+    this.logger.info('Start watching peer connections');
 
     this.#running = true;
     this.statsReporter.startReporting();
@@ -107,6 +122,8 @@ class WebRTCIssueDetector {
     if (!this.#running) {
       throw new Error('WebRTCIssueDetector is already stopped');
     }
+
+    this.logger.info('Stop watching peer connections');
 
     this.#running = false;
     this.statsReporter.stopReporting();
