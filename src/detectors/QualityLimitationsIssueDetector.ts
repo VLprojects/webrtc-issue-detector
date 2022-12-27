@@ -10,14 +10,14 @@ class QualityLimitationsIssueDetector extends BaseIssueDetector {
   performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
     const { connection: { id: connectionId } } = data;
     const issues = this.processData(data);
-    this.lastProcessedStats[connectionId] = data;
+    this.setLastProcessedStats(connectionId, data);
     return issues;
   }
 
   private processData(data: WebRTCStatsParsed): IssueDetectorResult {
     const streamsWithLimitation = data.video.outbound.filter((stats) => stats.qualityLimitationReason !== 'none');
     const issues: IssueDetectorResult = [];
-    const previousOutboundRTPVideoStreamsStats = this.lastProcessedStats[data.connection.id]?.video.outbound;
+    const previousOutboundRTPVideoStreamsStats = this.getLastProcessedStats(data.connection.id)?.video.outbound;
 
     if (!previousOutboundRTPVideoStreamsStats) {
       return issues;

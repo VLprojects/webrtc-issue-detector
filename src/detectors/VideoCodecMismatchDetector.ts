@@ -16,7 +16,7 @@ class VideoCodecMismatchDetector extends BaseIssueDetector {
   performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
     const { connection: { id: connectionId } } = data;
     const issues = this.processData(data);
-    this.lastProcessedStats[connectionId] = data;
+    this.setLastProcessedStats(connectionId, data);
     return issues;
   }
 
@@ -37,7 +37,7 @@ class VideoCodecMismatchDetector extends BaseIssueDetector {
   private processData(data: WebRTCStatsParsed): IssueDetectorResult {
     const issues: IssueDetectorResult = [];
     const { id: connectionId } = data.connection;
-    const previousInboundRTPVideoStreamsStats = this.lastProcessedStats[connectionId]?.video.inbound;
+    const previousInboundRTPVideoStreamsStats = this.getLastProcessedStats(connectionId)?.video.inbound;
 
     data.video.inbound.forEach((streamStats) => {
       const { decoderImplementation: currentDecoder, ssrc } = streamStats;

@@ -10,14 +10,14 @@ class NetworkMediaSyncIssueDetector extends BaseIssueDetector {
   performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
     const { connection: { id: connectionId } } = data;
     const issues = this.processData(data);
-    this.lastProcessedStats[connectionId] = data;
+    this.setLastProcessedStats(connectionId, data);
     return issues;
   }
 
   private processData(data: WebRTCStatsParsed): IssueDetectorResult {
     const inboundRTPAudioStreamsStats = data.audio.inbound;
     const issues: IssueDetectorResult = [];
-    const previousInboundRTPAudioStreamsStats = this.lastProcessedStats[data.connection.id]?.audio.inbound;
+    const previousInboundRTPAudioStreamsStats = this.getLastProcessedStats(data.connection.id)?.audio.inbound;
 
     if (!previousInboundRTPAudioStreamsStats) {
       return issues;

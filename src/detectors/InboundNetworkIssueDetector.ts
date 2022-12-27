@@ -10,7 +10,7 @@ class InboundNetworkIssueDetector extends BaseIssueDetector {
   performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
     const { connection: { id: connectionId } } = data;
     const issues = this.processData(data);
-    this.lastProcessedStats[connectionId] = data;
+    this.setLastProcessedStats(connectionId, data);
     return issues;
   }
 
@@ -21,7 +21,7 @@ class InboundNetworkIssueDetector extends BaseIssueDetector {
       return issues;
     }
 
-    const previousStats = this.lastProcessedStats[data.connection.id];
+    const previousStats = this.getLastProcessedStats(data.connection.id);
     if (!previousStats) {
       return issues;
     }

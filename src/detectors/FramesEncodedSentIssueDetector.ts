@@ -4,22 +4,31 @@ import {
   IssueType,
   WebRTCStatsParsed,
 } from '../types';
-import BaseIssueDetector from './BaseIssueDetector';
+import BaseIssueDetector, { BaseIssueDetectorParams } from './BaseIssueDetector';
+
+interface FramesEncodedSentIssueDetectorParams extends BaseIssueDetectorParams {
+  missedFramesThreshold?: number;
+}
 
 class FramesEncodedSentIssueDetector extends BaseIssueDetector {
-  #missedFramesThreshold = 0.15;
+  readonly #missedFramesThreshold: number;
+
+  constructor(params: FramesEncodedSentIssueDetectorParams = {}) {
+    super(params);
+    this.#missedFramesThreshold = params.missedFramesThreshold ?? 0.15;
+  }
 
   performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
     const { connection: { id: connectionId } } = data;
     const issues = this.processData(data);
-    this.lastProcessedStats[connectionId] = data;
+    this.setLastProcessedStats(connectionId, data);
     return issues;
   }
 
   private processData(data: WebRTCStatsParsed): IssueDetectorResult {
     const streamsWithEncodedFrames = data.video.outbound.filter((stats) => stats.framesEncoded > 0);
     const issues: IssueDetectorResult = [];
-    const previousOutboundRTPVideoStreamsStats = this.lastProcessedStats[data.connection.id]?.video.outbound;
+    const previousOutboundRTPVideoStreamsStats = this.getLastProcessedStats(data.connection.id)?.video.outbound;
 
     if (!previousOutboundRTPVideoStreamsStats) {
       return issues;

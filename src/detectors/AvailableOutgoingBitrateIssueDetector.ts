@@ -4,10 +4,19 @@ import {
   IssueType,
   WebRTCStatsParsed,
 } from '../types';
-import BaseIssueDetector from './BaseIssueDetector';
+import BaseIssueDetector, { BaseIssueDetectorParams } from './BaseIssueDetector';
+
+interface AvailableOutgoingBitrateIssueDetectorParams extends BaseIssueDetectorParams {
+  availableOutgoingBitrateThreshold?: number;
+}
 
 class AvailableOutgoingBitrateIssueDetector extends BaseIssueDetector {
-  #availableOutgoingBitrateThreshold = 100_000; // 100 KBit/s
+  readonly #availableOutgoingBitrateThreshold: number;
+
+  constructor(params: AvailableOutgoingBitrateIssueDetectorParams = {}) {
+    super(params);
+    this.#availableOutgoingBitrateThreshold = params.availableOutgoingBitrateThreshold ?? 100_000; // 100 KBit/s
+  }
 
   performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
     const issues: IssueDetectorResult = [];
