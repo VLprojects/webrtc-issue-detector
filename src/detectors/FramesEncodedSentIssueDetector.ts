@@ -1,36 +1,25 @@
 import {
-  IssueDetector,
   IssueDetectorResult,
   IssueReason,
   IssueType,
   WebRTCStatsParsed,
 } from '../types';
-import { scheduleTask } from '../utils/tasks';
-import { CLEANUP_PREV_STATS_TTL_MS } from '../utils/constants';
+import BaseIssueDetector from './BaseIssueDetector';
 
-class FramesEncodedSentIssueDetector implements IssueDetector {
-  #lastProcessedStats: { [connectionId: string]: WebRTCStatsParsed | undefined } = {};
-
+class FramesEncodedSentIssueDetector extends BaseIssueDetector {
   #missedFramesThreshold = 0.15;
 
-  detect(data: WebRTCStatsParsed): IssueDetectorResult {
+  performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
     const { connection: { id: connectionId } } = data;
     const issues = this.processData(data);
-    this.#lastProcessedStats[connectionId] = data;
-
-    scheduleTask({
-      taskId: connectionId,
-      delayMs: CLEANUP_PREV_STATS_TTL_MS,
-      callback: () => (delete this.#lastProcessedStats[connectionId]),
-    });
-
+    this.lastProcessedStats[connectionId] = data;
     return issues;
   }
 
   private processData(data: WebRTCStatsParsed): IssueDetectorResult {
     const streamsWithEncodedFrames = data.video.outbound.filter((stats) => stats.framesEncoded > 0);
     const issues: IssueDetectorResult = [];
-    const previousOutboundRTPVideoStreamsStats = this.#lastProcessedStats[data.connection.id]?.video.outbound;
+    const previousOutboundRTPVideoStreamsStats = this.lastProcessedStats[data.connection.id]?.video.outbound;
 
     if (!previousOutboundRTPVideoStreamsStats) {
       return issues;

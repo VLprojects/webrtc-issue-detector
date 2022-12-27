@@ -1,5 +1,4 @@
 import {
-  IssueDetector,
   IssueDetectorResult,
   IssueReason,
   IssueType,
@@ -7,19 +6,18 @@ import {
 } from '../types';
 import { scheduleTask } from '../utils/tasks';
 import { CLEANUP_PREV_STATS_TTL_MS } from '../utils/constants';
+import BaseIssueDetector from './BaseIssueDetector';
 
-class InboundNetworkIssueDetector implements IssueDetector {
-  #lastProcessedStats: { [connectionId: string]: WebRTCStatsParsed | undefined } = {};
-
-  detect(data: WebRTCStatsParsed): IssueDetectorResult {
+class InboundNetworkIssueDetector extends BaseIssueDetector {
+  performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
     const { connection: { id: connectionId } } = data;
     const issues = this.processData(data);
-    this.#lastProcessedStats[connectionId] = data;
+    this.lastProcessedStats[connectionId] = data;
 
     scheduleTask({
       taskId: connectionId,
       delayMs: CLEANUP_PREV_STATS_TTL_MS,
-      callback: () => (delete this.#lastProcessedStats[connectionId]),
+      callback: () => (delete this.lastProcessedStats[connectionId]),
     });
 
     return issues;
@@ -32,7 +30,7 @@ class InboundNetworkIssueDetector implements IssueDetector {
       return issues;
     }
 
-    const previousStats = this.#lastProcessedStats[data.connection.id];
+    const previousStats = this.lastProcessedStats[data.connection.id];
     if (!previousStats) {
       return issues;
     }

@@ -1,15 +1,15 @@
 import {
-  IssueDetector,
   IssueDetectorResult,
   IssueReason,
   IssueType,
   WebRTCStatsParsed,
 } from '../types';
+import BaseIssueDetector from './BaseIssueDetector';
 
-class AvailableOutgoingBitrateIssueDetector implements IssueDetector {
+class AvailableOutgoingBitrateIssueDetector extends BaseIssueDetector {
   #availableOutgoingBitrateThreshold = 100_000; // 100 KBit/s
 
-  detect(data: WebRTCStatsParsed): IssueDetectorResult {
+  performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
     const issues: IssueDetectorResult = [];
     const { availableOutgoingBitrate } = data.connection;
     if (availableOutgoingBitrate === undefined) {

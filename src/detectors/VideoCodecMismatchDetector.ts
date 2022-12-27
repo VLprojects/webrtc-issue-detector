@@ -1,43 +1,43 @@
 import {
-  IssueDetector,
   IssueDetectorResult,
   IssueReason,
   IssueType,
   WebRTCStatsParsed,
 } from '../types';
-import { scheduleTask } from '../utils/tasks';
-import { CLEANUP_PREV_STATS_TTL_MS } from '../utils/constants';
+import BaseIssueDetector, { PrevStatsCleanupPayload } from './BaseIssueDetector';
 
-class VideoCodecMismatchDetector implements IssueDetector {
+class VideoCodecMismatchDetector extends BaseIssueDetector {
   readonly UNKNOWN_DECODER = 'unknown';
-
-  #lastProcessedStats: { [connectionId: string]: WebRTCStatsParsed | undefined } = {};
 
   #lastDecoderWithIssue: {
     [connectionId: string]: { [ssrc: string]: string | undefined } | undefined;
   } = {};
 
-  detect(data: WebRTCStatsParsed): IssueDetectorResult {
+  performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
     const { connection: { id: connectionId } } = data;
     const issues = this.processData(data);
-    this.#lastProcessedStats[connectionId] = data;
+    this.lastProcessedStats[connectionId] = data;
+    return issues;
+  }
 
-    scheduleTask({
-      taskId: connectionId,
-      delayMs: CLEANUP_PREV_STATS_TTL_MS,
-      callback: () => {
-        delete this.#lastProcessedStats[connectionId];
+  protected performPrevStatsCleanup(payload: PrevStatsCleanupPayload) {
+    const { connectionId, cleanupCallback } = payload;
+    super.performPrevStatsCleanup({
+      ...payload,
+      cleanupCallback: () => {
         delete this.#lastDecoderWithIssue[connectionId];
+
+        if (typeof cleanupCallback === 'function') {
+          cleanupCallback();
+        }
       },
     });
-
-    return issues;
   }
 
   private processData(data: WebRTCStatsParsed): IssueDetectorResult {
     const issues: IssueDetectorResult = [];
     const { id: connectionId } = data.connection;
-    const previousInboundRTPVideoStreamsStats = this.#lastProcessedStats[connectionId]?.video.inbound;
+    const previousInboundRTPVideoStreamsStats = this.lastProcessedStats[connectionId]?.video.inbound;
 
     data.video.inbound.forEach((streamStats) => {
       const { decoderImplementation: currentDecoder, ssrc } = streamStats;

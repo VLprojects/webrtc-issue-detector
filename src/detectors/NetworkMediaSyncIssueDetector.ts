@@ -1,34 +1,23 @@
 import {
-  IssueDetector,
   IssueDetectorResult,
   IssueReason,
   IssueType,
   WebRTCStatsParsed,
 } from '../types';
-import { scheduleTask } from '../utils/tasks';
-import { CLEANUP_PREV_STATS_TTL_MS } from '../utils/constants';
+import BaseIssueDetector from './BaseIssueDetector';
 
-class NetworkMediaSyncIssueDetector implements IssueDetector {
-  #lastProcessedStats: { [connectionId: string]: WebRTCStatsParsed | undefined } = {};
-
-  detect(data: WebRTCStatsParsed): IssueDetectorResult {
+class NetworkMediaSyncIssueDetector extends BaseIssueDetector {
+  performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
     const { connection: { id: connectionId } } = data;
     const issues = this.processData(data);
-    this.#lastProcessedStats[connectionId] = data;
-
-    scheduleTask({
-      taskId: connectionId,
-      delayMs: CLEANUP_PREV_STATS_TTL_MS,
-      callback: () => (delete this.#lastProcessedStats[connectionId]),
-    });
-
+    this.lastProcessedStats[connectionId] = data;
     return issues;
   }
 
   private processData(data: WebRTCStatsParsed): IssueDetectorResult {
     const inboundRTPAudioStreamsStats = data.audio.inbound;
     const issues: IssueDetectorResult = [];
-    const previousInboundRTPAudioStreamsStats = this.#lastProcessedStats[data.connection.id]?.audio.inbound;
+    const previousInboundRTPAudioStreamsStats = this.lastProcessedStats[data.connection.id]?.audio.inbound;
 
     if (!previousInboundRTPAudioStreamsStats) {
       return issues;
