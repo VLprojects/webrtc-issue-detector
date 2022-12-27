@@ -3,7 +3,7 @@ import sinon, { SinonSandbox } from 'sinon';
 abstract class AbstractDouble {
   readonly sandbox: SinonSandbox;
 
-  constructor() {
+  protected constructor() {
     this.sandbox = sinon.createSandbox();
   }
 

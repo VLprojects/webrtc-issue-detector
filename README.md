@@ -136,7 +136,7 @@ const issue = {
 ```
 
 ### NetworkMediaSyncIssueDetector
-Detects issues with audio syncronization.
+Detects issues with audio synchronization.
 ```js
 const issue = {
     type: 'network',
@@ -158,7 +158,7 @@ const issue = {
 ```
 
 ### QualityLimitationsIssueDetector
-Detects issues with encoder and outbound network. Based on native qualitiLimitationReason.
+Detects issues with encoder and outbound network. Based on native qualityLimitationReason.
 ```js
 const issue = {
     type: 'cpu',
@@ -191,7 +191,7 @@ const issue = {
 
 ## Roadmap
 
-- [ ] Adaptive getStats() call interval based on last getStats() exectution time 
+- [ ] Adaptive getStats() call interval based on last getStats() execution time 
 - [ ] Structured issue debug
 - [ ] Issues detector for user devices permissions
 

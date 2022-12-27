@@ -1,15 +1,24 @@
 import {
-  IssueDetector,
   IssueDetectorResult,
   IssueReason,
   IssueType,
   WebRTCStatsParsed,
 } from '../types';
+import BaseIssueDetector, { BaseIssueDetectorParams } from './BaseIssueDetector';
 
-class AvailableOutgoingBitrateIssueDetector implements IssueDetector {
-  #availableOutgoingBitrateTreshold = 100000; // 100 kbit/s
+interface AvailableOutgoingBitrateIssueDetectorParams extends BaseIssueDetectorParams {
+  availableOutgoingBitrateThreshold?: number;
+}
 
-  detect(data: WebRTCStatsParsed): IssueDetectorResult {
+class AvailableOutgoingBitrateIssueDetector extends BaseIssueDetector {
+  readonly #availableOutgoingBitrateThreshold: number;
+
+  constructor(params: AvailableOutgoingBitrateIssueDetectorParams = {}) {
+    super(params);
+    this.#availableOutgoingBitrateThreshold = params.availableOutgoingBitrateThreshold ?? 100_000; // 100 KBit/s
+  }
+
+  performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
     const issues: IssueDetectorResult = [];
     const { availableOutgoingBitrate } = data.connection;
     if (availableOutgoingBitrate === undefined) {
@@ -39,7 +48,7 @@ class AvailableOutgoingBitrateIssueDetector implements IssueDetector {
       return issues;
     }
 
-    if (videoStreamsTotalBitrate > 0 && availableOutgoingBitrate < this.#availableOutgoingBitrateTreshold) {
+    if (videoStreamsTotalBitrate > 0 && availableOutgoingBitrate < this.#availableOutgoingBitrateThreshold) {
       issues.push({
         type: IssueType.Network,
         reason: IssueReason.OutboundNetworkThroughput,

@@ -92,6 +92,19 @@ describe('wid/lib/PeriodicWebRTCStatsReporter', () => {
     expect(parseMethodDouble.getCalls()).to.have.length(numberOfIntervals);
   });
 
+  it('should emit stats parsed event', async () => {
+    const getStatsInterval = faker.datatype.number({ min: 1, max: 9999 });
+    const compositeStatsParser = createCompositeStatsParserFake();
+    const reporter = createPeriodicStatsReporter({ compositeStatsParser, getStatsInterval });
+    sandbox.stub(compositeStatsParser, 'parse');
+    const emitSpy = sandbox.spy(reporter, 'emit');
+
+    reporter.startReporting();
+    await clock.tickAsync(getStatsInterval);
+
+    expect(emitSpy).to.be.calledWith(PeriodicWebRTCStatsReporter.STATS_REPORTS_PARSED, { timeTaken: 0 });
+  });
+
   it('should emit stats report ready event for each stats report item', async () => {
     const getStatsInterval = faker.datatype.number({ min: 1, max: 9999 });
     const compositeStatsParser = createCompositeStatsParserFake();
@@ -105,9 +118,8 @@ describe('wid/lib/PeriodicWebRTCStatsReporter', () => {
     reporter.startReporting();
     await clock.tickAsync(getStatsInterval);
 
-    expect(emitSpy).to.be.calledTwice;
-    expect(emitSpy.getCall(0)).to.be.calledWithExactly(PeriodicWebRTCStatsReporter.STATS_REPORT_READY_EVENT, firstReportItem);
-    expect(emitSpy.getCall(1)).to.be.calledWithExactly(PeriodicWebRTCStatsReporter.STATS_REPORT_READY_EVENT, secondReportItem);
+    expect(emitSpy).to.be.calledWith(PeriodicWebRTCStatsReporter.STATS_REPORT_READY_EVENT, firstReportItem);
+    expect(emitSpy).to.be.calledWith(PeriodicWebRTCStatsReporter.STATS_REPORT_READY_EVENT, secondReportItem);
   });
 
   it('should be be in stopped state', async () => {

@@ -103,7 +103,7 @@ describe('wid/lib/parser/RTCStatsParser', () => {
     const clock = sandbox.useFakeTimers();
 
     await parser.parse(payload);
-    await clock.tickAsync(54_999);
+    await clock.tickAsync(34_999);
 
     expect(parser.previouslyParsedStatsConnectionsIds).to.deep.eq([payload.id]);
   });
@@ -114,7 +114,7 @@ describe('wid/lib/parser/RTCStatsParser', () => {
     const clock = sandbox.useFakeTimers();
 
     await parser.parse(payload);
-    await clock.tickAsync(55_000);
+    await clock.tickAsync(35_000);
 
     expect(parser.previouslyParsedStatsConnectionsIds).to.deep.eq([]);
   });

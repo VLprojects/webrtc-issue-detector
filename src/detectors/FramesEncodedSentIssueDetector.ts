@@ -1,26 +1,34 @@
 import {
-  IssueDetector,
   IssueDetectorResult,
   IssueReason,
   IssueType,
   WebRTCStatsParsed,
 } from '../types';
+import BaseIssueDetector, { BaseIssueDetectorParams } from './BaseIssueDetector';
 
-class FramesEncodedSentIssueDetector implements IssueDetector {
-  #lastProcessedStats: { [connectionId: string]: WebRTCStatsParsed } = {};
+interface FramesEncodedSentIssueDetectorParams extends BaseIssueDetectorParams {
+  missedFramesThreshold?: number;
+}
 
-  #missedFramesTreshold = 0.15;
+class FramesEncodedSentIssueDetector extends BaseIssueDetector {
+  readonly #missedFramesThreshold: number;
 
-  detect(data: WebRTCStatsParsed): IssueDetectorResult {
+  constructor(params: FramesEncodedSentIssueDetectorParams = {}) {
+    super(params);
+    this.#missedFramesThreshold = params.missedFramesThreshold ?? 0.15;
+  }
+
+  performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
+    const { connection: { id: connectionId } } = data;
     const issues = this.processData(data);
-    this.#lastProcessedStats[data.connection.id] = data;
+    this.setLastProcessedStats(connectionId, data);
     return issues;
   }
 
   private processData(data: WebRTCStatsParsed): IssueDetectorResult {
     const streamsWithEncodedFrames = data.video.outbound.filter((stats) => stats.framesEncoded > 0);
     const issues: IssueDetectorResult = [];
-    const previousOutboundRTPVideoStreamsStats = this.#lastProcessedStats[data.connection.id]?.video.outbound;
+    const previousOutboundRTPVideoStreamsStats = this.getLastProcessedStats(data.connection.id)?.video.outbound;
 
     if (!previousOutboundRTPVideoStreamsStats) {
       return issues;
@@ -52,7 +60,7 @@ class FramesEncodedSentIssueDetector implements IssueDetector {
       }
 
       const missedFrames = deltaFramesSent / deltaFramesEncoded;
-      if (missedFrames >= this.#missedFramesTreshold) {
+      if (missedFrames >= this.#missedFramesThreshold) {
         issues.push({
           type: IssueType.Network,
           reason: IssueReason.OutboundNetworkThroughput,

@@ -9,6 +9,8 @@ interface PeriodicWebRTCStatsReporterParams {
 class PeriodicWebRTCStatsReporter extends EventEmitter {
   static readonly STATS_REPORT_READY_EVENT = 'stats-report-ready';
 
+  static readonly STATS_REPORTS_PARSED = 'stats-reports-parsed';
+
   private isStopped = false;
 
   private reportTimer: NodeJS.Timer | undefined;
@@ -20,7 +22,7 @@ class PeriodicWebRTCStatsReporter extends EventEmitter {
   constructor(params: PeriodicWebRTCStatsReporterParams) {
     super();
     this.compositeStatsParser = params.compositeStatsParser;
-    this.getStatsInterval = params.getStatsInterval ?? 10000;
+    this.getStatsInterval = params.getStatsInterval ?? 10_000;
   }
 
   get isRunning(): boolean {
@@ -34,11 +36,14 @@ class PeriodicWebRTCStatsReporter extends EventEmitter {
 
     const doExtract = () => setTimeout(() => {
       if (this.isStopped) {
+        this.reportTimer = undefined;
         return;
       }
 
       this.parseReports()
-        .finally(() => doExtract());
+        .finally(() => {
+          this.reportTimer = doExtract();
+        });
     }, this.getStatsInterval);
 
     this.isStopped = false;
@@ -55,7 +60,11 @@ class PeriodicWebRTCStatsReporter extends EventEmitter {
   }
 
   private async parseReports() {
+    const startTime = Date.now();
     const reportItems = await this.compositeStatsParser.parse();
+    const timeTaken = Date.now() - startTime;
+
+    this.emit(PeriodicWebRTCStatsReporter.STATS_REPORTS_PARSED, { timeTaken });
 
     reportItems.forEach((item: StatsReportItem) => {
       this.emit(PeriodicWebRTCStatsReporter.STATS_REPORT_READY_EVENT, item);

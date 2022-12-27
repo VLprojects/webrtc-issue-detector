@@ -21,6 +21,7 @@ export interface INetworkScoresCalculator {
 export enum EventType {
   Issue = 'issue',
   NetworkScoresUpdated = 'network-scores-updated',
+  StatsParsingFinished = 'stats-parsing-finished',
 }
 
 export type EventPayload = IssueDetectorResult;
@@ -101,6 +102,11 @@ export type NetworkScore = number;
 export type NetworkScores = {
   outbound?: NetworkScore,
   inbound?: NetworkScore,
+};
+
+export type StatsParsingFinishedPayload = {
+  timeTaken: number;
+  ts: number;
 };
 
 export type ParsedInboundAudioStreamStats = {

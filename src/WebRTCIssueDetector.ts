@@ -3,14 +3,14 @@ import {
   CompositeStatsParser,
   DetectIssuesPayload,
   EventType,
+  INetworkScoresCalculator,
   IssueDetector,
   IssuePayload,
-  INetworkScoresCalculator,
+  Logger,
   StatsReportItem,
   WebRTCIssueDetectorConstructorParams,
   WebRTCStatsParsed,
   WIDWindow,
-  Logger,
 } from './types';
 import PeriodicWebRTCStatsReporter from './parser/PeriodicWebRTCStatsReporter';
 import DefaultNetworkScoresCalculator from './NetworkScoresCalculator';
@@ -21,7 +21,8 @@ import {
   InboundNetworkIssueDetector,
   NetworkMediaSyncIssueDetector,
   OutboundNetworkIssueDetector,
-  QualityLimitationsIssueDetector, VideoCodecMismatchDetector,
+  QualityLimitationsIssueDetector,
+  VideoCodecMismatchDetector,
 } from './detectors';
 import { CompositeRTCStatsParser, RTCStatsParser } from './parser';
 import createLogger from './utils/logger';
@@ -84,12 +85,23 @@ class WebRTCIssueDetector {
 
       this.calculateNetworkScores(report.stats);
     });
+
+    this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORTS_PARSED, (data: { timeTaken: number }) => {
+      const payload = {
+        timeTaken: data.timeTaken,
+        ts: Date.now(),
+      };
+
+      this.eventEmitter.emit(EventType.StatsParsingFinished, payload);
+    });
   }
 
   public watchNewPeerConnections(): void {
     if (this.#running) {
       throw new Error('WebRTCIssueDetector is already started');
     }
+
+    this.logger.info('Start watching peer connections');
 
     this.#running = true;
     this.statsReporter.startReporting();
@@ -99,6 +111,8 @@ class WebRTCIssueDetector {
     if (!this.#running) {
       throw new Error('WebRTCIssueDetector is already stopped');
     }
+
+    this.logger.info('Stop watching peer connections');
 
     this.#running = false;
     this.statsReporter.stopReporting();
@@ -143,6 +157,7 @@ class WebRTCIssueDetector {
 
   private wrapRTCPeerConnection(): void {
     if (!window.RTCPeerConnection) {
+      this.logger.warn('No RTCPeerConnection found in browser window. Skipping');
       return;
     }
 
