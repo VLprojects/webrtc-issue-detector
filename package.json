@@ -2,9 +2,6 @@
   "name": "webrtc-issue-detector",
   "version": "1.5.1",
   "description": "WebRTC diagnostic tool that detects issues with network or user devices",
-  "main": "dist/bundle-cjs.js",
-  "module": "dist/bundle-esm.js",
-  "types": "dist/index.d.ts",
   "repository": "git@github.com:VLprojects/webrtc-issue-detector.git",
   "author": "Roman Kuzakov <roman.kuzakov@gmail.com>",
   "maintainers": [
@@ -20,7 +17,6 @@
     }
   ],
   "license": "MIT",
-  "private": false,
   "homepage": "https://github.com/VLprojects/webrtc-issue-detector#readme",
   "keywords": [
     "webrtc",
@@ -29,9 +25,6 @@
     "network",
     "issues",
     "mos calculator"
-  ],
-  "files": [
-    "dist/"
   ],
   "scripts": {
     "build": "rm -rf dist && rollup -c",
@@ -73,5 +66,11 @@
     "sinon-chai": "^3.7.0",
     "ts-node": "^10.9.1",
     "typescript": "^4.7.4"
-  }
+  },
+  "files": [
+    "dist/"
+  ],
+  "main": "dist/bundle-cjs.js",
+  "module": "dist/bundle-esm.js",
+  "types": "dist/index.d.ts"
 }
