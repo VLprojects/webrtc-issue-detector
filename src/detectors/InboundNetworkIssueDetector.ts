@@ -6,7 +6,30 @@ import {
 } from '../types';
 import BaseIssueDetector from './BaseIssueDetector';
 
+export interface InboundNetworkIssueDetectorParams {
+  highPacketLossThresholdPct?: number;
+  highJitterThreshold?: number;
+  highJitterBufferDelayThresholdMs?: number;
+  highRttThresholdMs?: number;
+}
+
 class InboundNetworkIssueDetector extends BaseIssueDetector {
+  readonly highPacketLossThresholdPct: number;
+
+  readonly highJitterThreshold: number;
+
+  readonly highJitterBufferDelayThresholdMs: number;
+
+  readonly highRttThresholdMs: number;
+
+  constructor(params: InboundNetworkIssueDetectorParams = {}) {
+    super();
+    this.highPacketLossThresholdPct = params.highPacketLossThresholdPct ?? 5;
+    this.highJitterThreshold = params.highJitterThreshold ?? 200;
+    this.highJitterBufferDelayThresholdMs = params.highJitterBufferDelayThresholdMs ?? 500;
+    this.highRttThresholdMs = params.highRttThresholdMs ?? 250;
+  }
+
   performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
     const { connection: { id: connectionId } } = data;
     const issues = this.processData(data);
@@ -60,55 +83,59 @@ class InboundNetworkIssueDetector extends BaseIssueDetector {
     const deltaPacketReceived = packetsReceived - lastPacketsReceived;
     const deltaPacketLost = rtpNetworkStats.packetsLost - rtpNetworkStats.lastPacketsLost;
 
-    const packetsLoss = deltaPacketReceived && deltaPacketLost
+    const packetLossPct = deltaPacketReceived && deltaPacketLost
       ? Math.round((deltaPacketLost * 100) / (deltaPacketReceived + deltaPacketLost))
       : 0;
 
-    const isHighPacketsLoss = packetsLoss > 5;
-    const isHighJitter = avgJitter >= 200;
-    const isHighRTT = rtt >= 250;
-    const isHighJitterBufferDelay = avgJitterBufferDelay > 500;
-    const isNetworkIssue = (!isHighPacketsLoss && isHighJitter) || isHighJitter || isHighPacketsLoss;
+    const isHighPacketsLoss = packetLossPct > this.highPacketLossThresholdPct;
+    const isHighJitter = avgJitter >= this.highJitterThreshold;
+    const isHighRTT = rtt >= this.highRttThresholdMs;
+    const isHighJitterBufferDelay = avgJitterBufferDelay > this.highJitterBufferDelayThresholdMs;
+    const isNetworkIssue = isHighJitter || isHighPacketsLoss;
     const isServerIssue = isHighRTT && !isHighJitter && !isHighPacketsLoss;
     const isNetworkMediaLatencyIssue = isHighPacketsLoss && isHighJitter;
     const isNetworkMediaSyncIssue = isHighJitter && isHighJitterBufferDelay;
 
-    const debug = `packetLoss: ${packetsLoss}%, jitter: ${avgJitter}, rtt: ${rtt},`
-      + ` jitterBuffer: ${avgJitterBufferDelay}ms`;
+    const debug = {
+      rtt,
+      packetLossPct,
+      avgJitter,
+      avgJitterBufferDelay,
+    };
 
     if (isNetworkIssue) {
       issues.push({
+        debug,
         type: IssueType.Network,
         reason: IssueReason.InboundNetworkQuality,
         iceCandidate: data.connection.local.id,
-        debug,
       });
     }
 
     if (isServerIssue) {
       issues.push({
+        debug,
         type: IssueType.Server,
         reason: IssueReason.ServerIssue,
         iceCandidate: data.connection.remote.id,
-        debug,
       });
     }
 
     if (isNetworkMediaLatencyIssue) {
       issues.push({
+        debug,
         type: IssueType.Network,
         reason: IssueReason.InboundNetworkMediaLatency,
         iceCandidate: data.connection.local.id,
-        debug,
       });
     }
 
     if (isNetworkMediaSyncIssue) {
       issues.push({
+        debug,
         type: IssueType.Network,
         reason: IssueReason.NetworkMediaSyncFailure,
         iceCandidate: data.connection.local.id,
-        debug,
       });
     }
 

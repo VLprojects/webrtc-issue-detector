@@ -36,21 +36,25 @@ class QualityLimitationsIssueDetector extends BaseIssueDetector {
         return;
       }
 
+      const debug = {
+        qualityLimitationReason: streamStats.qualityLimitationReason,
+      };
+
       if (streamStats.qualityLimitationReason === 'cpu') {
         issues.push({
+          debug,
           type: IssueType.CPU,
           reason: IssueReason.EncoderCPUThrottling,
           ssrc: streamStats.ssrc,
-          debug: 'qualityLimitationReason: cpu',
         });
       }
 
       if (streamStats.qualityLimitationReason === 'bandwidth') {
         issues.push({
+          debug,
           type: IssueType.Network,
           reason: IssueReason.OutboundNetworkThroughput,
           ssrc: streamStats.ssrc,
-          debug: 'qualityLimitationReason: bandwidth',
         });
       }
     });

@@ -60,15 +60,20 @@ class OutboundNetworkIssueDetector extends BaseIssueDetector {
     const deltaPacketSent = packetsSent - lastPacketsSent;
     const deltaPacketLost = rtpNetworkStats.packetsLost - rtpNetworkStats.lastPacketsLost;
 
-    const packetsLoss = deltaPacketSent && deltaPacketLost
+    const packetLossPct = deltaPacketSent && deltaPacketLost
       ? Math.round((deltaPacketLost * 100) / (deltaPacketSent + deltaPacketLost))
       : 0;
 
-    const isHighPacketsLoss = packetsLoss > 5;
+    const isHighPacketsLoss = packetLossPct > 5;
     const isHighJitter = avgJitter >= 200;
     const isNetworkMediaLatencyIssue = isHighPacketsLoss && isHighJitter;
     const isNetworkIssue = (!isHighPacketsLoss && isHighJitter) || isHighJitter || isHighPacketsLoss;
-    const debug = `packetLoss: ${packetsLoss}%, jitter: ${avgJitter}, rtt: ${rtt}`;
+
+    const debug = {
+      packetLossPct,
+      avgJitter,
+      rtt,
+    };
 
     if (isNetworkMediaLatencyIssue) {
       issues.push({

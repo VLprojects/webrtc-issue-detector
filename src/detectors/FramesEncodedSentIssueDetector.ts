@@ -60,12 +60,18 @@ class FramesEncodedSentIssueDetector extends BaseIssueDetector {
       }
 
       const missedFrames = deltaFramesSent / deltaFramesEncoded;
+      const debug = {
+        deltaFramesSent,
+        deltaFramesEncoded,
+        missedFramesPct: Math.round(missedFrames * 100),
+      };
+
       if (missedFrames >= this.#missedFramesThreshold) {
         issues.push({
+          debug,
           type: IssueType.Network,
           reason: IssueReason.OutboundNetworkThroughput,
           ssrc: streamStats.ssrc,
-          debug: `missedFrames: ${Math.round(missedFrames * 100)}%`,
         });
       }
     });

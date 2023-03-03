@@ -1,6 +1,6 @@
 import faker from 'faker';
 import { expect } from 'chai';
-import VideoCodecMismatchDetector from '../../src/detectors/VideoCodecMismatchDetector';
+import UnknownVideoDecoderImplementationDetector from '../../src/detectors/UnknownVideoDecoderImplementationDetector';
 import { ParsedInboundVideoStreamStats, WebRTCStatsParsed } from '../../src';
 
 interface CreateStatsForDetectorTestPayload {
@@ -41,13 +41,16 @@ const createStatsForDetector = (payload: CreateStatsForDetectorTestPayload = {})
 const createIssueDetectorResult = (payload: CreateIssueDetectorResultTestPayload) => ({
   ssrc: payload.ssrc,
   trackIdentifier: payload.trackIdentifier,
-  debug: `mimeType: ${payload.mimeType}, decoderImplementation: ${payload.decoderImplementation}`,
-  reason: 'codec-mismatch',
+  debug: {
+    mimeType: payload.mimeType,
+    decoderImplementation: payload.decoderImplementation,
+  },
+  reason: 'unknown-video-decoder',
   type: 'stream',
 });
 
-describe('wid/detectors/VideoCodecMismatchDetector', () => {
-  const detector = new VideoCodecMismatchDetector();
+describe('wid/detectors/UnknownVideoDecoderImplementationDetector', () => {
+  const detector = new UnknownVideoDecoderImplementationDetector();
 
   it('should detect unknown decoder on the second iteration', () => {
     const mimeType = faker.lorem.slug();
