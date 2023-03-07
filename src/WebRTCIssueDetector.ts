@@ -98,7 +98,8 @@ class WebRTCIssueDetector {
 
   public watchNewPeerConnections(): void {
     if (this.#running) {
-      throw new Error('WebRTCIssueDetector is already started');
+      this.logger.warn('WebRTCIssueDetector is already started. Skip processing');
+      return;
     }
 
     this.logger.info('Start watching peer connections');
@@ -109,7 +110,8 @@ class WebRTCIssueDetector {
 
   public stopWatchingNewPeerConnections(): void {
     if (!this.#running) {
-      throw new Error('WebRTCIssueDetector is already stopped');
+      this.logger.warn('WebRTCIssueDetector is already stopped. Skip processing');
+      return;
     }
 
     this.logger.info('Stop watching peer connections');

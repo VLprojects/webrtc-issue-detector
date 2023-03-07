@@ -70,9 +70,9 @@ class OutboundNetworkIssueDetector extends BaseIssueDetector {
     const isNetworkIssue = (!isHighPacketsLoss && isHighJitter) || isHighJitter || isHighPacketsLoss;
 
     const statsSample = {
-      packetLossPct,
-      avgJitter,
       rtt,
+      avgJitter,
+      packetLossPct,
     };
 
     if (isNetworkMediaLatencyIssue) {

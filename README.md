@@ -5,19 +5,21 @@ Diagnostic tool for WebRTC JS applications that analyzes WebRTC getStats() resul
 
 ## Key features
 
-- **Mean opinion score** - calculates [MOS](https://en.wikipedia.org/wiki/Mean_opinion_score) for inbound and outbound network connections that can indicate problems before it even appears.
+- **Mean opinion score** - calculates [MOS](https://en.wikipedia.org/wiki/Mean_opinion_score) for inbound and outbound network connections that can indicate a problem before it even appears.
 - **CPU issues** - indicates possible issues with encoding and decoding media streams.
 - **Server issues** - indicates possible server side issues.
 - **Fully customizable** - allows to create your own detectors or WebRTC getStats() parsers.
 
 
 ## Installation
+
 `yarn add webrtc-issue-detector`
 
 
 ## Usage
 
 ### Getting started
+
 ```typescript
 import WebRTCIssueDetector from 'webrtc-issue-detector';
 
@@ -26,7 +28,7 @@ const webRtcIssueDetector = new WebRTCIssueDetector({
     onIssues: (issues) => issues.map((issue) => {
         console.log('Issues type:', issue.type); // eg. "network"
         console.log('Issues reason:', issue.reason); // eg. "outbound-network-throughput"
-        console.log('Issues reason:', issue.debug); // eg. "packetLoss: 12%, jitter: 230, rtt: 150"
+        console.log('Issues reason:', issue.statsSample); // eg. "packetLossPct: 12%, avgJitter: 230, rtt: 150"
     }),
     onNetworkScoresUpdated: (scores) => {
         console.log('Inbound network score', scores.inbound); // eg. 3.7
@@ -36,6 +38,9 @@ const webRtcIssueDetector = new WebRTCIssueDetector({
 
 // start collecting getStats() and detecting issues
 webRtcIssueDetector.watchNewPeerConnections();
+
+// stop collecting WebRTC stats and issues detection
+webRtcIssueDetector.stopWatchingNewPeerConnections();
 ```
 
 ### Configure
@@ -51,7 +56,7 @@ import WebRTCIssueDetector, {
   OutboundNetworkIssueDetector,
   NetworkMediaSyncIssueDetector,
   AvailableOutgoingBitrateIssueDetector,
-  VideoCodecMismatchDetector,
+  UnknownVideoDecoderImplementationDetector,
 } from 'webrtc-issue-detector';
 
 const widWithDefaultConstructorArgs = new WebRTCIssueDetector();
@@ -67,7 +72,7 @@ const widWithCustomConstructorArgs = new WebRTCIssueDetector({
     new OutboundNetworkIssueDetector(),
     new NetworkMediaSyncIssueDetector(),
     new AvailableOutgoingBitrateIssueDetector(),
-    new VideoCodecMismatchDetector(),
+    new UnknownVideoDecoderImplementationDetector(),
   ],
   getStatsInterval: 10_000, // set custom stats parsing interval
   onIssues: (payload: IssueDetectorResult) => {
@@ -87,105 +92,143 @@ const widWithCustomConstructorArgs = new WebRTCIssueDetector({
 ### AvailableOutgoingBitrateIssueDetector
 Detects issues with outgoing network connection.
 ```js
-const issue = {
+const exampleIssue = {
     type: 'network',
     reason: 'outbound-network-throughput',
-    debug: '...',
+    statsSample: {
+      availableOutgoingBitrate: 1234,
+      videoStreamsTotalBitrate: 1234,
+      audioStreamsTotalTargetBitrate: 1234,
+    },
 }
 ```
 
 ### FramesDroppedIssueDetector
 Detects issues with decoder.
 ```js
-const issue = {
+const exampleIssue = {
     type: 'cpu',
     reason: 'decoder-cpu-throttling',
-    debug: '...',
+    statsSample: {
+      deltaFramesDropped: 100,
+      deltaFramesReceived: 1000,
+      deltaFramesDecoded: 900,
+      framesDroppedPct: 10,
+    },
+    ssrc: 1234,
 }
 ```
 
 ### FramesEncodedSentIssueDetector
 Detects issues with outbound network throughput.
 ```js
-const issue = {
+const exampleIssue = {
     type: 'network',
     reason: 'outbound-network-throughput',
-    debug: '...',
+    statsSample: {
+      deltaFramesSent: 900,
+      deltaFramesEncoded: 1000,
+      missedFramesPct: 10,
+    },
+    ssrc: 1234,
 }
 ```
 
 ### InboundNetworkIssueDetector
 Detects issues with inbound network connection.
 ```js
-const issue = {
+const exampleIssue = {
     type: 'network',
     reason: 'inbound-network-quality' | 'inbound-network-media-latency' | 'network-media-sync-failure',
     iceCandidate: 'ice-candidate-id',
-    debug: '...',
+    statsSample: {
+      rtt: 1234,
+      packetLossPct: 1234,
+      avgJitter: 1234,
+      avgJitterBufferDelay: 1234,
+    },
 }
 ```
 
 Also can detect server side issues if there is high RTT and jitter is ok.
 ```js
-const issue = {
+const exampleIssue = {
     type: 'server',
     reason: 'server-issue',
     iceCandidate: 'ice-candidate-id',
-    debug: '...',
+      statsSample: {
+        rtt: 1234,
+        packetLossPct: 1234,
+        avgJitter: 1234,
+        avgJitterBufferDelay: 1234,
+      },
 }
 ```
 
 ### NetworkMediaSyncIssueDetector
 Detects issues with audio synchronization.
 ```js
-const issue = {
+const exampleIssue = {
     type: 'network',
     reason: 'network-media-sync-failure',
-    ssrc: '...',
-    debug: '...',
+    ssrc: 1234,
+    statsSample: {
+      correctedSamplesPct: 15,
+    },
 }
 ```
 
 ### OutboundNetworkIssueDetector
 Detects issues with outbound network connection.
 ```js
-const issue = {
+const exampleIssue = {
     type: 'network',
     reason: 'outbound-network-quality' | 'outbound-network-media-latency',
     iceCandidate: 'ice-candidate-id',
-    debug: '...',
+    statsSample: {
+      rtt: 1234,
+      avgJitter: 1234,
+      packetLossPct: 1234,
+    },
 }
 ```
 
 ### QualityLimitationsIssueDetector
 Detects issues with encoder and outbound network. Based on native qualityLimitationReason.
 ```js
-const issue = {
+const exampleIssue = {
     type: 'cpu',
     reason: 'encoder-cpu-throttling',
-    ssrc: '...',
-    debug: '...',
+    ssrc: 1234,
+    statsSample: {
+      qualityLimitationReason: 'cpu',
+    },
 }
 ```
 
 ```js
-const issue = {
+const exampleIssue = {
     type: 'network',
     reason: 'outbound-network-throughput',
-    ssrc: '...',
-    debug: '...',
+    ssrc: 1234,
+    statsSample: {
+      qualityLimitationReason: 'bandwidth',
+    },
 }
 ```
 
 ### VideoCodecMismatchDetector
 Detects issues with decoding stream.
 ```js
-const issue = {
+const exampleIssue = {
     type: 'stream',
-    reason: 'codec-mismatch',
-    ssrc: '...',
-    trackIdentifier: '...',
-    debug: '...',
+    reason: 'unknown-video-decoder',
+    ssrc: 1234,
+    trackIdentifier: 'some-track-id',
+    statsSample: {
+      mimeType: 'video/vp9',
+      decoderImplementation: 'unknown'
+    },
 }
 ```
 
