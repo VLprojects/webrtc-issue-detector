@@ -48,7 +48,7 @@ class FramesEncodedSentIssueDetector extends BaseIssueDetector {
 
       const deltaFramesEncoded = streamStats.framesEncoded - previousStreamStats.framesEncoded;
       const deltaFramesSent = streamStats.framesSent - previousStreamStats.framesSent;
-      const missedFrames = deltaFramesSent / deltaFramesEncoded;
+      const missedFrames = 1 - deltaFramesSent / deltaFramesEncoded;
 
       if (deltaFramesEncoded === 0) {
         // stream is paused
