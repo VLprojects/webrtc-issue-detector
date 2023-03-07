@@ -56,14 +56,14 @@ class UnknownVideoDecoderImplementationDetector extends BaseIssueDetector {
       if (!this.hadLastDecoderWithIssue(connectionId, ssrc)) {
         this.setLastDecoderWithIssue(connectionId, ssrc, this.UNKNOWN_DECODER);
 
-        const debug = {
+        const statsSample = {
           mimeType: streamStats.mimeType,
           decoderImplementation: currentDecoder,
         };
 
         issues.push({
           ssrc,
-          debug,
+          statsSample,
           type: IssueType.Stream,
           reason: IssueReason.UnknownVideoDecoderIssue,
           trackIdentifier: streamStats.track.trackIdentifier,

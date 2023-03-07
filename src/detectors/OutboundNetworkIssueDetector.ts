@@ -69,7 +69,7 @@ class OutboundNetworkIssueDetector extends BaseIssueDetector {
     const isNetworkMediaLatencyIssue = isHighPacketsLoss && isHighJitter;
     const isNetworkIssue = (!isHighPacketsLoss && isHighJitter) || isHighJitter || isHighPacketsLoss;
 
-    const debug = {
+    const statsSample = {
       packetLossPct,
       avgJitter,
       rtt,
@@ -77,19 +77,19 @@ class OutboundNetworkIssueDetector extends BaseIssueDetector {
 
     if (isNetworkMediaLatencyIssue) {
       issues.push({
+        statsSample,
         type: IssueType.Network,
         reason: IssueReason.OutboundNetworkMediaLatency,
         iceCandidate: data.connection.local.id,
-        debug,
       });
     }
 
     if (isNetworkIssue) {
       issues.push({
+        statsSample,
         type: IssueType.Network,
         reason: IssueReason.OutboundNetworkQuality,
         iceCandidate: data.connection.local.id,
-        debug,
       });
     }
 

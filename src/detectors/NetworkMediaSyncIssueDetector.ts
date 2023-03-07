@@ -41,13 +41,13 @@ class NetworkMediaSyncIssueDetector extends BaseIssueDetector {
       const deltaSamplesReceived = stats.track.totalSamplesReceived - previousStreamStats.track.totalSamplesReceived;
       const deltaCorrectedSamples = nowCorrectedSamples - lastCorrectedSamples;
       const correctedSamplesPct = Math.round((deltaCorrectedSamples * 100) / deltaSamplesReceived);
-      const debug = {
+      const statsSample = {
         correctedSamplesPct,
       };
 
       if (correctedSamplesPct > 5) {
         issues.push({
-          debug,
+          statsSample,
           type: IssueType.Network,
           reason: IssueReason.NetworkMediaSyncFailure,
           ssrc: stats.ssrc,

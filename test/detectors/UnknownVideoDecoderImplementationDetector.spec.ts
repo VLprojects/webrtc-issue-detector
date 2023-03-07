@@ -41,7 +41,7 @@ const createStatsForDetector = (payload: CreateStatsForDetectorTestPayload = {})
 const createIssueDetectorResult = (payload: CreateIssueDetectorResultTestPayload) => ({
   ssrc: payload.ssrc,
   trackIdentifier: payload.trackIdentifier,
-  debug: {
+  statsSample: {
     mimeType: payload.mimeType,
     decoderImplementation: payload.decoderImplementation,
   },

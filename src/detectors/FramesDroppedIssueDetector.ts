@@ -48,14 +48,14 @@ class FramesDroppedIssueDetector extends BaseIssueDetector {
       const deltaFramesReceived = streamStats.framesReceived - previousStreamStats.framesReceived;
       const deltaFramesDecoded = streamStats.framesDecoded - previousStreamStats.framesDecoded;
       const deltaFramesDropped = streamStats.framesDropped - previousStreamStats.framesDropped;
+      const framesDropped = deltaFramesDropped / deltaFramesReceived;
 
       if (deltaFramesReceived === 0 || deltaFramesDecoded === 0) {
         // looks like stream is stopped, skip checking framesDropped
         return;
       }
 
-      const framesDropped = deltaFramesDropped / deltaFramesReceived;
-      const debug = {
+      const statsSample = {
         deltaFramesDropped,
         deltaFramesReceived,
         deltaFramesDecoded,
@@ -65,7 +65,7 @@ class FramesDroppedIssueDetector extends BaseIssueDetector {
       if (framesDropped >= this.#framesDroppedThreshold) {
         // more than half of the received frames were dropped
         issues.push({
-          debug,
+          statsSample,
           type: IssueType.CPU,
           reason: IssueReason.DecoderCPUThrottling,
           ssrc: streamStats.ssrc,

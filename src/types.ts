@@ -88,7 +88,7 @@ export type IssuePayload = {
   ssrc?: number;
   iceCandidate?: string;
   data?: number;
-  debug?: Record<string, unknown>;
+  statsSample?: Record<string, unknown>;
   trackIdentifier?: string;
 };
 

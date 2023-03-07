@@ -48,6 +48,7 @@ class FramesEncodedSentIssueDetector extends BaseIssueDetector {
 
       const deltaFramesEncoded = streamStats.framesEncoded - previousStreamStats.framesEncoded;
       const deltaFramesSent = streamStats.framesSent - previousStreamStats.framesSent;
+      const missedFrames = deltaFramesSent / deltaFramesEncoded;
 
       if (deltaFramesEncoded === 0) {
         // stream is paused
@@ -59,8 +60,7 @@ class FramesEncodedSentIssueDetector extends BaseIssueDetector {
         return;
       }
 
-      const missedFrames = deltaFramesSent / deltaFramesEncoded;
-      const debug = {
+      const statsSample = {
         deltaFramesSent,
         deltaFramesEncoded,
         missedFramesPct: Math.round(missedFrames * 100),
@@ -68,7 +68,7 @@ class FramesEncodedSentIssueDetector extends BaseIssueDetector {
 
       if (missedFrames >= this.#missedFramesThreshold) {
         issues.push({
-          debug,
+          statsSample,
           type: IssueType.Network,
           reason: IssueReason.OutboundNetworkThroughput,
           ssrc: streamStats.ssrc,

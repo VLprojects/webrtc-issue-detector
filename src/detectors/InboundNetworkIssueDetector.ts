@@ -96,7 +96,7 @@ class InboundNetworkIssueDetector extends BaseIssueDetector {
     const isNetworkMediaLatencyIssue = isHighPacketsLoss && isHighJitter;
     const isNetworkMediaSyncIssue = isHighJitter && isHighJitterBufferDelay;
 
-    const debug = {
+    const statsSample = {
       rtt,
       packetLossPct,
       avgJitter,
@@ -105,7 +105,7 @@ class InboundNetworkIssueDetector extends BaseIssueDetector {
 
     if (isNetworkIssue) {
       issues.push({
-        debug,
+        statsSample,
         type: IssueType.Network,
         reason: IssueReason.InboundNetworkQuality,
         iceCandidate: data.connection.local.id,
@@ -114,7 +114,7 @@ class InboundNetworkIssueDetector extends BaseIssueDetector {
 
     if (isServerIssue) {
       issues.push({
-        debug,
+        statsSample,
         type: IssueType.Server,
         reason: IssueReason.ServerIssue,
         iceCandidate: data.connection.remote.id,
@@ -123,7 +123,7 @@ class InboundNetworkIssueDetector extends BaseIssueDetector {
 
     if (isNetworkMediaLatencyIssue) {
       issues.push({
-        debug,
+        statsSample,
         type: IssueType.Network,
         reason: IssueReason.InboundNetworkMediaLatency,
         iceCandidate: data.connection.local.id,
@@ -132,7 +132,7 @@ class InboundNetworkIssueDetector extends BaseIssueDetector {
 
     if (isNetworkMediaSyncIssue) {
       issues.push({
-        debug,
+        statsSample,
         type: IssueType.Network,
         reason: IssueReason.NetworkMediaSyncFailure,
         iceCandidate: data.connection.local.id,

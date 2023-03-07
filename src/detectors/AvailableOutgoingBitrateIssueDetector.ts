@@ -37,7 +37,7 @@ class AvailableOutgoingBitrateIssueDetector extends BaseIssueDetector {
       return issues;
     }
 
-    const debug = {
+    const statsSample = {
       availableOutgoingBitrate,
       videoStreamsTotalBitrate,
       audioStreamsTotalTargetBitrate,
@@ -45,7 +45,7 @@ class AvailableOutgoingBitrateIssueDetector extends BaseIssueDetector {
 
     if (audioStreamsTotalTargetBitrate > availableOutgoingBitrate) {
       issues.push({
-        debug,
+        statsSample,
         type: IssueType.Network,
         reason: IssueReason.OutboundNetworkThroughput,
       });
@@ -55,7 +55,7 @@ class AvailableOutgoingBitrateIssueDetector extends BaseIssueDetector {
 
     if (videoStreamsTotalBitrate > 0 && availableOutgoingBitrate < this.#availableOutgoingBitrateThreshold) {
       issues.push({
-        debug,
+        statsSample,
         type: IssueType.Network,
         reason: IssueReason.OutboundNetworkThroughput,
       });
