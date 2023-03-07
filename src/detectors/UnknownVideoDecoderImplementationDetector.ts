@@ -6,7 +6,7 @@ import {
 } from '../types';
 import BaseIssueDetector, { PrevStatsCleanupPayload } from './BaseIssueDetector';
 
-class VideoCodecMismatchDetector extends BaseIssueDetector {
+class UnknownVideoDecoderImplementationDetector extends BaseIssueDetector {
   readonly UNKNOWN_DECODER = 'unknown';
 
   #lastDecoderWithIssue: {
@@ -56,12 +56,17 @@ class VideoCodecMismatchDetector extends BaseIssueDetector {
       if (!this.hadLastDecoderWithIssue(connectionId, ssrc)) {
         this.setLastDecoderWithIssue(connectionId, ssrc, this.UNKNOWN_DECODER);
 
+        const statsSample = {
+          mimeType: streamStats.mimeType,
+          decoderImplementation: currentDecoder,
+        };
+
         issues.push({
           ssrc,
+          statsSample,
           type: IssueType.Stream,
-          reason: IssueReason.VideoCodecMismatchIssue,
+          reason: IssueReason.UnknownVideoDecoderIssue,
           trackIdentifier: streamStats.track.trackIdentifier,
-          debug: `mimeType: ${streamStats.mimeType}, decoderImplementation: ${currentDecoder}`,
         });
       }
     });
@@ -88,4 +93,4 @@ class VideoCodecMismatchDetector extends BaseIssueDetector {
   }
 }
 
-export default VideoCodecMismatchDetector;
+export default UnknownVideoDecoderImplementationDetector;

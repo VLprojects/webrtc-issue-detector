@@ -5,4 +5,4 @@ export { default as InboundNetworkIssueDetector } from './InboundNetworkIssueDet
 export { default as NetworkMediaSyncIssueDetector } from './NetworkMediaSyncIssueDetector';
 export { default as OutboundNetworkIssueDetector } from './OutboundNetworkIssueDetector';
 export { default as QualityLimitationsIssueDetector } from './QualityLimitationsIssueDetector';
-export { default as VideoCodecMismatchDetector } from './VideoCodecMismatchDetector';
+export { default as UnknownVideoDecoderImplementationDetector } from './UnknownVideoDecoderImplementationDetector';

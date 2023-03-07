@@ -31,6 +31,10 @@ class QualityLimitationsIssueDetector extends BaseIssueDetector {
         return;
       }
 
+      const statsSample = {
+        qualityLimitationReason: streamStats.qualityLimitationReason,
+      };
+
       if (streamStats.framesSent > previousStreamStats.framesSent) {
         // stream is still sending
         return;
@@ -38,19 +42,19 @@ class QualityLimitationsIssueDetector extends BaseIssueDetector {
 
       if (streamStats.qualityLimitationReason === 'cpu') {
         issues.push({
+          statsSample,
           type: IssueType.CPU,
           reason: IssueReason.EncoderCPUThrottling,
           ssrc: streamStats.ssrc,
-          debug: 'qualityLimitationReason: cpu',
         });
       }
 
       if (streamStats.qualityLimitationReason === 'bandwidth') {
         issues.push({
+          statsSample,
           type: IssueType.Network,
           reason: IssueReason.OutboundNetworkThroughput,
           ssrc: streamStats.ssrc,
-          debug: 'qualityLimitationReason: bandwidth',
         });
       }
     });

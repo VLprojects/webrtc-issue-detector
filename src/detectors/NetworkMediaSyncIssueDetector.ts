@@ -40,14 +40,17 @@ class NetworkMediaSyncIssueDetector extends BaseIssueDetector {
 
       const deltaSamplesReceived = stats.track.totalSamplesReceived - previousStreamStats.track.totalSamplesReceived;
       const deltaCorrectedSamples = nowCorrectedSamples - lastCorrectedSamples;
-      const correctedSamplesPercentage = Math.round((deltaCorrectedSamples * 100) / deltaSamplesReceived);
+      const correctedSamplesPct = Math.round((deltaCorrectedSamples * 100) / deltaSamplesReceived);
+      const statsSample = {
+        correctedSamplesPct,
+      };
 
-      if (correctedSamplesPercentage > 5) {
+      if (correctedSamplesPct > 5) {
         issues.push({
+          statsSample,
           type: IssueType.Network,
           reason: IssueReason.NetworkMediaSyncFailure,
           ssrc: stats.ssrc,
-          debug: `correctedSamplesPercentage: ${correctedSamplesPercentage}%`,
         });
       }
     });

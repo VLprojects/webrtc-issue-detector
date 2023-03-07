@@ -37,12 +37,17 @@ class AvailableOutgoingBitrateIssueDetector extends BaseIssueDetector {
       return issues;
     }
 
+    const statsSample = {
+      availableOutgoingBitrate,
+      videoStreamsTotalBitrate,
+      audioStreamsTotalTargetBitrate,
+    };
+
     if (audioStreamsTotalTargetBitrate > availableOutgoingBitrate) {
       issues.push({
+        statsSample,
         type: IssueType.Network,
         reason: IssueReason.OutboundNetworkThroughput,
-        debug: `availableOutgoingBitrate: ${availableOutgoingBitrate}`
-          + `, audioStreamsTotalTargetBitrate: ${audioStreamsTotalTargetBitrate}`,
       });
 
       return issues;
@@ -50,10 +55,9 @@ class AvailableOutgoingBitrateIssueDetector extends BaseIssueDetector {
 
     if (videoStreamsTotalBitrate > 0 && availableOutgoingBitrate < this.#availableOutgoingBitrateThreshold) {
       issues.push({
+        statsSample,
         type: IssueType.Network,
         reason: IssueReason.OutboundNetworkThroughput,
-        debug: `availableOutgoingBitrate: ${availableOutgoingBitrate}`
-          + `, videoStreamsTotalBitrate: ${videoStreamsTotalBitrate}`,
       });
 
       return issues;

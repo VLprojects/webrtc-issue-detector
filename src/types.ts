@@ -77,19 +77,19 @@ export enum IssueReason {
   EncoderCPUThrottling = 'encoder-cpu-throttling',
   DecoderCPUThrottling = 'decoder-cpu-throttling',
   ServerIssue = 'server-issue',
-  VideoCodecMismatchIssue = 'codec-mismatch',
+  UnknownVideoDecoderIssue = 'unknown-video-decoder',
   LowInboundMOS = 'low-inbound-mean-opinion-score',
   LowOutboundMOS = 'low-outbound-mean-opinion-score',
 }
 
 export type IssuePayload = {
-  type: IssueType,
-  reason: IssueReason,
-  ssrc?: number,
-  iceCandidate?: string,
+  type: IssueType;
+  reason: IssueReason;
+  ssrc?: number;
+  iceCandidate?: string;
   data?: number;
-  debug?: string,
-  trackIdentifier?: string,
+  statsSample?: Record<string, unknown>;
+  trackIdentifier?: string;
 };
 
 export type DetectIssuesPayload = {
