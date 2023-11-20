@@ -99,9 +99,19 @@ export type DetectIssuesPayload = {
 
 export type NetworkScore = number;
 
+export type NetworkQualityStats = {
+  avgJitter: number;
+  rtt: number;
+  packetsLoss: number;
+};
+
 export type NetworkScores = {
   outbound?: NetworkScore,
   inbound?: NetworkScore,
+  debug: {
+    outboundStats?: NetworkQualityStats,
+    inboundStats?: NetworkQualityStats,
+  },
 };
 
 export type StatsParsingFinishedPayload = {
