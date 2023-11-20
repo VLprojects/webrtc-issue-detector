@@ -4,17 +4,23 @@ import {
   NetworkScores,
   INetworkScoresCalculator,
   WebRTCStatsParsed,
+  NetworkQualityStatsSample,
 } from './types';
 import { scheduleTask } from './utils/tasks';
 import { CLEANUP_PREV_STATS_TTL_MS } from './utils/constants';
+
+type MosCalculatorResult = {
+  mos: NetworkScore,
+  stats: NetworkQualityStatsSample,
+};
 
 class NetworkScoresCalculator implements INetworkScoresCalculator {
   #lastProcessedStats: { [connectionId: string]: WebRTCStatsParsed } = {};
 
   calculate(data: WebRTCStatsParsed): NetworkScores {
     const { connection: { id: connectionId } } = data;
-    const outbound = this.calculateOutboundScore(data);
-    const inbound = this.calculateInboundScore(data);
+    const { mos: outbound, stats: outboundStatsSample } = this.calculateOutboundScore(data) || {};
+    const { mos: inbound, stats: inboundStatsSample } = this.calculateInboundScore(data) || {};
     this.#lastProcessedStats[connectionId] = data;
 
     scheduleTask({
@@ -23,10 +29,17 @@ class NetworkScoresCalculator implements INetworkScoresCalculator {
       callback: () => (delete this.#lastProcessedStats[connectionId]),
     });
 
-    return { outbound, inbound };
+    return {
+      outbound,
+      inbound,
+      statsSamples: {
+        inboundStatsSample,
+        outboundStatsSample,
+      },
+    };
   }
 
-  private calculateOutboundScore(data: WebRTCStatsParsed): NetworkScore | undefined {
+  private calculateOutboundScore(data: WebRTCStatsParsed): MosCalculatorResult | undefined {
     const remoteInboundRTPStreamsStats = [
       ...data.remote?.audio.inbound || [],
       ...data.remote?.video.inbound || [],
@@ -75,10 +88,14 @@ class NetworkScoresCalculator implements INetworkScoresCalculator {
       ? Math.round((deltaPacketLost * 100) / (deltaPacketSent + deltaPacketLost))
       : 0;
 
-    return this.calculateMOS({ avgJitter, rtt, packetsLoss });
+    const mos = this.calculateMOS({ avgJitter, rtt, packetsLoss });
+    return {
+      mos,
+      stats: { avgJitter, rtt, packetsLoss },
+    };
   }
 
-  private calculateInboundScore(data: WebRTCStatsParsed): NetworkScore | undefined {
+  private calculateInboundScore(data: WebRTCStatsParsed): MosCalculatorResult | undefined {
     const inboundRTPStreamsStats = [...data.audio?.inbound, ...data.video?.inbound];
     if (!inboundRTPStreamsStats.length) {
       return undefined;
@@ -117,7 +134,11 @@ class NetworkScoresCalculator implements INetworkScoresCalculator {
       ? Math.round((deltaPacketLost * 100) / (deltaPacketReceived + deltaPacketLost))
       : 0;
 
-    return this.calculateMOS({ avgJitter, rtt, packetsLoss });
+    const mos = this.calculateMOS({ avgJitter, rtt, packetsLoss });
+    return {
+      mos,
+      stats: { avgJitter, rtt, packetsLoss },
+    };
   }
 
   private calculateMOS(

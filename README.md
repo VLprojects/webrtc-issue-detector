@@ -28,11 +28,12 @@ const webRtcIssueDetector = new WebRTCIssueDetector({
     onIssues: (issues) => issues.map((issue) => {
         console.log('Issues type:', issue.type); // eg. "network"
         console.log('Issues reason:', issue.reason); // eg. "outbound-network-throughput"
-        console.log('Issues reason:', issue.statsSample); // eg. "packetLossPct: 12%, avgJitter: 230, rtt: 150"
+        console.log('Stats:', issue.statsSample); // eg. "packetLossPct: 12%, avgJitter: 230, rtt: 150"
     }),
     onNetworkScoresUpdated: (scores) => {
         console.log('Inbound network score', scores.inbound); // eg. 3.7
         console.log('Outbound network score', scores.outbound); // eg. 4.5
+        console.log('Network stats', scores.statsSamples); // eg. { inboundStatsSample: { avgJitter: 0.1, rtt: 30, packetsLoss: 8 }, ... }
     }
 });
 
