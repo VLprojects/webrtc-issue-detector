@@ -77,9 +77,10 @@ class NetworkScoresCalculator implements INetworkScoresCalculator {
       lastPacketsLost: 0,
     });
 
+    const streams = remoteInboundRTPStreamsStats.length;
     const rtt = (1e3 * data.connection.currentRoundTripTime) || 0;
     const { sumJitter } = rtpNetworkStats;
-    const avgJitter = sumJitter / remoteInboundRTPStreamsStats.length;
+    const avgJitter = sumJitter / streams;
 
     const deltaPacketSent = packetsSent - lastPacketsSent;
     const deltaPacketLost = rtpNetworkStats.packetsLost - rtpNetworkStats.lastPacketsLost;
@@ -91,7 +92,12 @@ class NetworkScoresCalculator implements INetworkScoresCalculator {
     const mos = this.calculateMOS({ avgJitter, rtt, packetsLoss });
     return {
       mos,
-      stats: { avgJitter, rtt, packetsLoss },
+      stats: {
+        avgJitter,
+        rtt,
+        packetsLoss,
+        streams,
+      },
     };
   }
 
@@ -123,9 +129,10 @@ class NetworkScoresCalculator implements INetworkScoresCalculator {
       lastPacketsLost: 0,
     });
 
+    const streams = inboundRTPStreamsStats.length;
     const rtt = (1e3 * data.connection.currentRoundTripTime) || 0;
     const { sumJitter } = rtpNetworkStats;
-    const avgJitter = sumJitter / inboundRTPStreamsStats.length;
+    const avgJitter = sumJitter / streams;
 
     const deltaPacketReceived = packetsReceived - lastPacketsReceived;
     const deltaPacketLost = rtpNetworkStats.packetsLost - rtpNetworkStats.lastPacketsLost;
@@ -137,7 +144,12 @@ class NetworkScoresCalculator implements INetworkScoresCalculator {
     const mos = this.calculateMOS({ avgJitter, rtt, packetsLoss });
     return {
       mos,
-      stats: { avgJitter, rtt, packetsLoss },
+      stats: {
+        avgJitter,
+        rtt,
+        packetsLoss,
+        streams,
+      },
     };
   }
 

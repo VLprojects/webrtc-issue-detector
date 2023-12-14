@@ -103,6 +103,7 @@ export type NetworkQualityStatsSample = {
   avgJitter: number;
   rtt: number;
   packetsLoss: number;
+  streams: number;
 };
 
 export type NetworkScores = {
