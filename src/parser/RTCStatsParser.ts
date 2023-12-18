@@ -24,6 +24,7 @@ interface PrevStatsItem {
 }
 
 interface WebRTCStatsParserParams {
+  ignoreSSRCList?: number[];
   logger: Logger;
 }
 
@@ -40,9 +41,12 @@ class RTCStatsParser implements StatsParser {
     'transport',
   ]);
 
+  private readonly ignoreSSRCList: number[];
+
   private readonly logger: Logger;
 
   constructor(params: WebRTCStatsParserParams) {
+    this.ignoreSSRCList = params.ignoreSSRCList ?? [];
     this.logger = params.logger;
   }
 
@@ -64,8 +68,13 @@ class RTCStatsParser implements StatsParser {
 
     try {
       const beforeGetStats = Date.now();
-      const receiversStats = await Promise.all(pc.getReceivers().map((r) => r.getStats()));
-      const sendersStats = await Promise.all(pc.getSenders().map((r) => r.getStats()));
+
+      const recieversWithActiveTracks = pc.getReceivers().filter((r) => r.track?.enabled);
+      const sendersWithActiveTracks = pc.getSenders().filter((s) => s.track?.enabled);
+
+      const receiversStats = await Promise.all(recieversWithActiveTracks.map((r) => r.getStats()));
+      const sendersStats = await Promise.all(sendersWithActiveTracks.map((r) => r.getStats()));
+
       const stats = this.mapReportsStats([...receiversStats, ...sendersStats], info);
 
       return {
@@ -147,6 +156,11 @@ class RTCStatsParser implements StatsParser {
 
     const mediaType = this.getMediaType(statsItem);
     if (!mediaType) {
+      return;
+    }
+
+    const ssrc = statsItem.ssrc as number;
+    if (ssrc && this.ignoreSSRCList.includes(ssrc)) {
       return;
     }
 

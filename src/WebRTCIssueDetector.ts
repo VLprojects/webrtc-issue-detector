@@ -67,7 +67,10 @@ class WebRTCIssueDetector {
 
     this.networkScoresCalculator = params.networkScoresCalculator ?? new DefaultNetworkScoresCalculator();
     this.compositeStatsParser = params.compositeStatsParser ?? new CompositeRTCStatsParser({
-      statsParser: new RTCStatsParser({ logger: this.logger }),
+      statsParser: new RTCStatsParser({
+        ignoreSSRCList: params.ignoreSSRCList,
+        logger: this.logger,
+      }),
     });
     this.statsReporter = params.statsReporter ?? new PeriodicWebRTCStatsReporter({
       compositeStatsParser: this.compositeStatsParser,
@@ -80,7 +83,6 @@ class WebRTCIssueDetector {
     this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORT_READY_EVENT, (report: StatsReportItem) => {
       this.detectIssues({
         data: report.stats,
-        ignoreSSRCList: params.ignoreSSRCList,
       });
 
       this.calculateNetworkScores(report.stats);
@@ -135,18 +137,8 @@ class WebRTCIssueDetector {
     this.eventEmitter.emit(EventType.Issue, issues);
   }
 
-  private detectIssues({ data, ignoreSSRCList }: DetectIssuesPayload): void {
-    let issues = this.detectors.reduce<IssuePayload[]>((acc, detector) => [...acc, ...detector.detect(data)], []);
-    if (ignoreSSRCList?.length) {
-      issues = issues.filter((issue) => {
-        if (!issue.ssrc) {
-          return true;
-        }
-
-        return !ignoreSSRCList.includes(issue.ssrc);
-      });
-    }
-
+  private detectIssues({ data }: DetectIssuesPayload): void {
+    const issues = this.detectors.reduce<IssuePayload[]>((acc, detector) => [...acc, ...detector.detect(data)], []);
     if (issues.length > 0) {
       this.emitIssues(issues);
     }
