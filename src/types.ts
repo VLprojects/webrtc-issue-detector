@@ -94,7 +94,6 @@ export type IssuePayload = {
 
 export type DetectIssuesPayload = {
   data: WebRTCStatsParsed,
-  ignoreSSRCList?: number[],
 };
 
 export type NetworkScore = number;
