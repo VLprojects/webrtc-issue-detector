@@ -57,6 +57,7 @@ export type WebRTCIssueDetectorConstructorParams = {
   onNetworkScoresUpdated?: (payload: NetworkScores) => void,
   ignoreSSRCList?: number[],
   getStatsInterval?: number,
+  autoAddPeerConnections?: boolean,
 };
 
 export enum IssueType {

@@ -42,6 +42,8 @@ class WebRTCIssueDetector {
 
   private readonly logger: Logger;
 
+  private readonly autoAddPeerConnections: boolean;
+
   constructor(params: WebRTCIssueDetectorConstructorParams) {
     this.logger = params.logger ?? createLogger();
     this.eventEmitter = params.issueEmitter ?? new WebRTCIssueEmitter();
@@ -78,7 +80,10 @@ class WebRTCIssueDetector {
     });
 
     (window as unknown as WIDWindow).wid = this;
-    this.wrapRTCPeerConnection();
+    this.autoAddPeerConnections = params.autoAddPeerConnections ?? true;
+    if (this.autoAddPeerConnections) {
+      this.wrapRTCPeerConnection();
+    }
 
     this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORT_READY_EVENT, (report: StatsReportItem) => {
       this.detectIssues({
@@ -101,6 +106,9 @@ class WebRTCIssueDetector {
   public watchNewPeerConnections(): void {
     if (this.#running) {
       this.logger.warn('WebRTCIssueDetector is already started. Skip processing');
+      return;
+    } else if (!this.autoAddPeerConnections) {
+      this.logger.warn('Auto add peer connections is disabled. Skip processing');
       return;
     }
 
@@ -126,6 +134,10 @@ class WebRTCIssueDetector {
     if (!this.#running) {
       this.logger.debug('Skip handling new peer connection. Detector is not running', pc);
       return;
+    } else if (!this.autoAddPeerConnections) {
+      this.logger.info("Starting stats reporting for new peer connection");
+      this.#running = true;
+      this.statsReporter.startReporting();
     }
 
     this.logger.debug('Handling new peer connection', pc);
