@@ -104,11 +104,11 @@ class WebRTCIssueDetector {
   }
 
   public watchNewPeerConnections(): void {
+    if (this.autoAddPeerConnections === false) {
+      throw 'Auto add peer connections was disabled in the constructor.';
+    }
     if (this.#running) {
       this.logger.warn('WebRTCIssueDetector is already started. Skip processing');
-      return;
-    } else if (!this.autoAddPeerConnections) {
-      this.logger.warn('Auto add peer connections is disabled. Skip processing');
       return;
     }
 
@@ -134,8 +134,8 @@ class WebRTCIssueDetector {
     if (!this.#running) {
       this.logger.debug('Skip handling new peer connection. Detector is not running', pc);
       return;
-    } else if (!this.autoAddPeerConnections) {
-      this.logger.info("Starting stats reporting for new peer connection");
+    } else if (this.autoAddPeerConnections === false) {
+      this.logger.info('Starting stats reporting for new peer connection');
       this.#running = true;
       this.statsReporter.startReporting();
     }
