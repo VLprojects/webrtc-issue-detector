@@ -131,10 +131,12 @@ class WebRTCIssueDetector {
   }
 
   public handleNewPeerConnection(pc: RTCPeerConnection): void {
-    if (!this.#running) {
+    if (!this.#running && this.autoAddPeerConnections) {
       this.logger.debug('Skip handling new peer connection. Detector is not running', pc);
       return;
-    } else if (this.autoAddPeerConnections === false) {
+    }
+    
+    if (!this.#running && this.autoAddPeerConnections === false) {
       this.logger.info('Starting stats reporting for new peer connection');
       this.#running = true;
       this.statsReporter.startReporting();
