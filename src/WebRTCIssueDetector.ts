@@ -104,9 +104,10 @@ class WebRTCIssueDetector {
   }
 
   public watchNewPeerConnections(): void {
-    if (this.autoAddPeerConnections === false) {
-      throw 'Auto add peer connections was disabled in the constructor.';
+    if (!this.autoAddPeerConnections) {
+      throw new Error('Auto add peer connections was disabled in the constructor.');
     }
+
     if (this.#running) {
       this.logger.warn('WebRTCIssueDetector is already started. Skip processing');
       return;
