@@ -11,7 +11,7 @@ export interface BaseIssueDetectorParams {
   statsCleanupTtlMs?: number;
 }
 
-export abstract class BaseIssueDetector implements IssueDetector {
+abstract class BaseIssueDetector implements IssueDetector {
   readonly #lastProcessedStats: Map<string, WebRTCStatsParsed | undefined>;
 
   readonly #statsCleanupDelayMs: number;
