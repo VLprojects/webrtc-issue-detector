@@ -5,6 +5,7 @@ import {
   INetworkScoresCalculator,
   WebRTCStatsParsed,
   NetworkQualityStatsSample,
+  NetworkScoresPayload,
 } from './types';
 import { scheduleTask } from './utils/tasks';
 import { CLEANUP_PREV_STATS_TTL_MS } from './utils/constants';
@@ -17,7 +18,7 @@ type MosCalculatorResult = {
 class NetworkScoresCalculator implements INetworkScoresCalculator {
   #lastProcessedStats: { [connectionId: string]: WebRTCStatsParsed } = {};
 
-  calculate(data: WebRTCStatsParsed): NetworkScores {
+  calculate({ data, id }: NetworkScoresPayload): NetworkScores {
     const { connection: { id: connectionId } } = data;
     const { mos: outbound, stats: outboundStatsSample } = this.calculateOutboundScore(data) || {};
     const { mos: inbound, stats: inboundStatsSample } = this.calculateInboundScore(data) || {};
@@ -32,6 +33,7 @@ class NetworkScoresCalculator implements INetworkScoresCalculator {
     return {
       outbound,
       inbound,
+      id,
       statsSamples: {
         inboundStatsSample,
         outboundStatsSample,

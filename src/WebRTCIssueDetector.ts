@@ -9,7 +9,7 @@ import {
   Logger,
   StatsReportItem,
   WebRTCIssueDetectorConstructorParams,
-  WebRTCStatsParsed,
+  NetworkScoresPayload,
   WIDWindow,
 } from './types';
 import PeriodicWebRTCStatsReporter from './parser/PeriodicWebRTCStatsReporter';
@@ -85,12 +85,10 @@ class WebRTCIssueDetector {
       this.wrapRTCPeerConnection();
     }
 
-    this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORT_READY_EVENT, (report: StatsReportItem) => {
-      this.detectIssues({
-        data: report.stats,
-      });
+    this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORT_READY_EVENT, ({ stats, id }: StatsReportItem) => {
+      this.detectIssues({ data: stats });
 
-      this.calculateNetworkScores(report.stats);
+      this.calculateNetworkScores({ data: stats, id });
     });
 
     this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORTS_PARSED, (data: { timeTaken: number }) => {
@@ -131,7 +129,7 @@ class WebRTCIssueDetector {
     this.statsReporter.stopReporting();
   }
 
-  public handleNewPeerConnection(pc: RTCPeerConnection): void {
+  public handleNewPeerConnection(pc: RTCPeerConnection, id?: string): void {
     if (!this.#running && this.autoAddPeerConnections) {
       this.logger.debug('Skip handling new peer connection. Detector is not running', pc);
       return;
@@ -143,9 +141,9 @@ class WebRTCIssueDetector {
       this.statsReporter.startReporting();
     }
 
-    this.logger.debug('Handling new peer connection', pc);
+    this.logger.debug(`Handling new peer connection with id ${id}`, pc);
 
-    this.compositeStatsParser.addPeerConnection({ pc });
+    this.compositeStatsParser.addPeerConnection({ pc, id });
   }
 
   private emitIssues(issues: IssuePayload[]): void {
@@ -159,8 +157,8 @@ class WebRTCIssueDetector {
     }
   }
 
-  private calculateNetworkScores(data: WebRTCStatsParsed): void {
-    const networkScores = this.networkScoresCalculator.calculate(data);
+  private calculateNetworkScores(payload: NetworkScoresPayload): void {
+    const networkScores = this.networkScoresCalculator.calculate(payload);
     this.eventEmitter.emit(EventType.NetworkScoresUpdated, networkScores);
   }
 
