@@ -85,7 +85,7 @@ class WebRTCIssueDetector {
       this.wrapRTCPeerConnection();
     }
 
-    this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORT_READY_EVENT, (report : StatsReportItem) => {
+    this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORT_READY_EVENT, (report: StatsReportItem) => {
       this.detectIssues({
         data: report.stats,
       });
@@ -159,8 +159,8 @@ class WebRTCIssueDetector {
     }
   }
 
-  private calculateNetworkScores(payload: WebRTCStatsParsed): void {
-    const networkScores = this.networkScoresCalculator.calculate(payload);
+  private calculateNetworkScores(data: WebRTCStatsParsed): void {
+    const networkScores = this.networkScoresCalculator.calculate(data);
     this.eventEmitter.emit(EventType.NetworkScoresUpdated, networkScores);
   }
 
