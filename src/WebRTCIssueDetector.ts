@@ -9,7 +9,7 @@ import {
   Logger,
   StatsReportItem,
   WebRTCIssueDetectorConstructorParams,
-  NetworkScoresPayload,
+  WebRTCStatsParsed,
   WIDWindow,
 } from './types';
 import PeriodicWebRTCStatsReporter from './parser/PeriodicWebRTCStatsReporter';
@@ -85,10 +85,12 @@ class WebRTCIssueDetector {
       this.wrapRTCPeerConnection();
     }
 
-    this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORT_READY_EVENT, ({ stats, id }: StatsReportItem) => {
-      this.detectIssues({ data: stats });
+    this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORT_READY_EVENT, (report : StatsReportItem) => {
+      this.detectIssues({
+        data: report.stats,
+      });
 
-      this.calculateNetworkScores({ data: stats, id });
+      this.calculateNetworkScores(report.stats);
     });
 
     this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORTS_PARSED, (data: { timeTaken: number }) => {
@@ -129,7 +131,7 @@ class WebRTCIssueDetector {
     this.statsReporter.stopReporting();
   }
 
-  public handleNewPeerConnection(pc: RTCPeerConnection, id?: string): void {
+  public handleNewPeerConnection(pc: RTCPeerConnection): void {
     if (!this.#running && this.autoAddPeerConnections) {
       this.logger.debug('Skip handling new peer connection. Detector is not running', pc);
       return;
@@ -141,9 +143,9 @@ class WebRTCIssueDetector {
       this.statsReporter.startReporting();
     }
 
-    this.logger.debug(`Handling new peer connection with id ${id}`, pc);
+    this.logger.debug('Handling new peer connection', pc);
 
-    this.compositeStatsParser.addPeerConnection({ pc, id });
+    this.compositeStatsParser.addPeerConnection({ pc });
   }
 
   private emitIssues(issues: IssuePayload[]): void {
@@ -157,7 +159,7 @@ class WebRTCIssueDetector {
     }
   }
 
-  private calculateNetworkScores(payload: NetworkScoresPayload): void {
+  private calculateNetworkScores(payload: WebRTCStatsParsed): void {
     const networkScores = this.networkScoresCalculator.calculate(payload);
     this.eventEmitter.emit(EventType.NetworkScoresUpdated, networkScores);
   }

@@ -15,7 +15,7 @@ export interface IssueDetector {
 }
 
 export interface INetworkScoresCalculator {
-  calculate(data: NetworkScoresPayload): NetworkScores;
+  calculate(data: WebRTCStatsParsed): NetworkScores;
 }
 
 export enum EventType {
@@ -105,15 +105,10 @@ export type NetworkQualityStatsSample = {
   packetsLoss: number;
 };
 
-export type NetworkScoresPayload = {
-  data: WebRTCStatsParsed,
-  id?: string;
-};
-
 export type NetworkScores = {
   outbound?: NetworkScore,
   inbound?: NetworkScore,
-  id?: string;
+  pc?: string,
   statsSamples: {
     outboundStatsSample?: NetworkQualityStatsSample,
     inboundStatsSample?: NetworkQualityStatsSample,
