@@ -32,7 +32,7 @@ class NetworkScoresCalculator implements INetworkScoresCalculator {
     return {
       outbound,
       inbound,
-      pc: connectionId,
+      connectionId,
       statsSamples: {
         inboundStatsSample,
         outboundStatsSample,
