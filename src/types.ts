@@ -108,6 +108,7 @@ export type NetworkQualityStatsSample = {
 export type NetworkScores = {
   outbound?: NetworkScore,
   inbound?: NetworkScore,
+  connectionId?: string,
   statsSamples: {
     outboundStatsSample?: NetworkQualityStatsSample,
     inboundStatsSample?: NetworkQualityStatsSample,
