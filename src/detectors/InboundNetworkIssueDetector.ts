@@ -4,9 +4,9 @@ import {
   IssueType,
   WebRTCStatsParsed,
 } from '../types';
-import BaseIssueDetector from './BaseIssueDetector';
+import BaseIssueDetector, { BaseIssueDetectorParams } from './BaseIssueDetector';
 
-export interface InboundNetworkIssueDetectorParams {
+interface InboundNetworkIssueDetectorParams extends BaseIssueDetectorParams {
   highPacketLossThresholdPct?: number;
   highJitterThreshold?: number;
   highJitterBufferDelayThresholdMs?: number;
@@ -14,20 +14,17 @@ export interface InboundNetworkIssueDetectorParams {
 }
 
 class InboundNetworkIssueDetector extends BaseIssueDetector {
-  readonly highPacketLossThresholdPct: number;
-
-  readonly highJitterThreshold: number;
-
-  readonly highJitterBufferDelayThresholdMs: number;
-
-  readonly highRttThresholdMs: number;
+  readonly #highPacketLossThresholdPct: number;
+  readonly #highJitterThreshold: number;
+  readonly #highJitterBufferDelayThresholdMs: number;
+  readonly #highRttThresholdMs: number;
 
   constructor(params: InboundNetworkIssueDetectorParams = {}) {
     super();
-    this.highPacketLossThresholdPct = params.highPacketLossThresholdPct ?? 5;
-    this.highJitterThreshold = params.highJitterThreshold ?? 200;
-    this.highJitterBufferDelayThresholdMs = params.highJitterBufferDelayThresholdMs ?? 500;
-    this.highRttThresholdMs = params.highRttThresholdMs ?? 250;
+    this.#highPacketLossThresholdPct = params.highPacketLossThresholdPct ?? 5;
+    this.#highJitterThreshold = params.highJitterThreshold ?? 200;
+    this.#highJitterBufferDelayThresholdMs = params.highJitterBufferDelayThresholdMs ?? 500;
+    this.#highRttThresholdMs = params.highRttThresholdMs ?? 250;
   }
 
   performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
@@ -87,10 +84,10 @@ class InboundNetworkIssueDetector extends BaseIssueDetector {
       ? Math.round((deltaPacketLost * 100) / (deltaPacketReceived + deltaPacketLost))
       : 0;
 
-    const isHighPacketsLoss = packetLossPct > this.highPacketLossThresholdPct;
-    const isHighJitter = avgJitter >= this.highJitterThreshold;
-    const isHighRTT = rtt >= this.highRttThresholdMs;
-    const isHighJitterBufferDelay = avgJitterBufferDelay > this.highJitterBufferDelayThresholdMs;
+    const isHighPacketsLoss = packetLossPct > this.#highPacketLossThresholdPct;
+    const isHighJitter = avgJitter >= this.#highJitterThreshold;
+    const isHighRTT = rtt >= this.#highRttThresholdMs;
+    const isHighJitterBufferDelay = avgJitterBufferDelay > this.#highJitterBufferDelayThresholdMs;
     const isNetworkIssue = isHighJitter || isHighPacketsLoss;
     const isServerIssue = isHighRTT && !isHighJitter && !isHighPacketsLoss;
     const isNetworkMediaLatencyIssue = isHighPacketsLoss && isHighJitter;
