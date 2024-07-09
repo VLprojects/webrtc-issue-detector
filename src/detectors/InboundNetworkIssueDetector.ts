@@ -6,7 +6,7 @@ import {
 } from '../types';
 import BaseIssueDetector, { BaseIssueDetectorParams } from './BaseIssueDetector';
 
-interface InboundNetworkIssueDetectorParams extends BaseIssueDetectorParams {
+export interface InboundNetworkIssueDetectorParams extends BaseIssueDetectorParams {
   highPacketLossThresholdPct?: number;
   highJitterThreshold?: number;
   highJitterBufferDelayThresholdMs?: number;
