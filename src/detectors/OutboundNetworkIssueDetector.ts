@@ -4,9 +4,23 @@ import {
   IssueType,
   WebRTCStatsParsed,
 } from '../types';
-import BaseIssueDetector from './BaseIssueDetector';
+import BaseIssueDetector, { BaseIssueDetectorParams } from './BaseIssueDetector';
+
+interface OutboundNetworkIssueDetectorParams extends BaseIssueDetectorParams {
+  highPacketLossThresholdPct?: number;
+  highJitterThreshold?: number;
+}
 
 class OutboundNetworkIssueDetector extends BaseIssueDetector {
+  readonly #highPacketLossThresholdPct: number;
+  readonly #highJitterThreshold: number;
+
+  constructor(params: OutboundNetworkIssueDetectorParams = {}) {
+    super();
+    this.#highPacketLossThresholdPct = params.highPacketLossThresholdPct ?? 5;
+    this.#highJitterThreshold = params.highJitterThreshold ?? 200;
+  }
+
   performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
     const { connection: { id: connectionId } } = data;
     const issues = this.processData(data);
@@ -64,8 +78,8 @@ class OutboundNetworkIssueDetector extends BaseIssueDetector {
       ? Math.round((deltaPacketLost * 100) / (deltaPacketSent + deltaPacketLost))
       : 0;
 
-    const isHighPacketsLoss = packetLossPct > 5;
-    const isHighJitter = avgJitter >= 200;
+    const isHighPacketsLoss = packetLossPct > this.#highPacketLossThresholdPct;
+    const isHighJitter = avgJitter >= this.#highJitterThreshold;
     const isNetworkMediaLatencyIssue = isHighPacketsLoss && isHighJitter;
     const isNetworkIssue = (!isHighPacketsLoss && isHighJitter) || isHighJitter || isHighPacketsLoss;
 
