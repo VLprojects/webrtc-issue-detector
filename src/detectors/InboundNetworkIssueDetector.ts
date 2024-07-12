@@ -15,8 +15,11 @@ export interface InboundNetworkIssueDetectorParams extends BaseIssueDetectorPara
 
 class InboundNetworkIssueDetector extends BaseIssueDetector {
   readonly #highPacketLossThresholdPct: number;
+
   readonly #highJitterThreshold: number;
+
   readonly #highJitterBufferDelayThresholdMs: number;
+
   readonly #highRttThresholdMs: number;
 
   constructor(params: InboundNetworkIssueDetectorParams = {}) {

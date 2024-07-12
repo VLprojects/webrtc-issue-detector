@@ -13,6 +13,7 @@ interface OutboundNetworkIssueDetectorParams extends BaseIssueDetectorParams {
 
 class OutboundNetworkIssueDetector extends BaseIssueDetector {
   readonly #highPacketLossThresholdPct: number;
+
   readonly #highJitterThreshold: number;
 
   constructor(params: OutboundNetworkIssueDetectorParams = {}) {
