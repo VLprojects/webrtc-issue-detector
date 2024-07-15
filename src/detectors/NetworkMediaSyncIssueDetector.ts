@@ -4,9 +4,20 @@ import {
   IssueType,
   WebRTCStatsParsed,
 } from '../types';
-import BaseIssueDetector from './BaseIssueDetector';
+import BaseIssueDetector, { BaseIssueDetectorParams } from './BaseIssueDetector';
+
+interface NetworkMediaSyncIssueDetectorParams extends BaseIssueDetectorParams {
+  correctedSamplesThresholdPct?: number
+}
 
 class NetworkMediaSyncIssueDetector extends BaseIssueDetector {
+  readonly #correctedSamplesThresholdPct: number;
+
+  constructor(params: NetworkMediaSyncIssueDetectorParams = {}) {
+    super();
+    this.#correctedSamplesThresholdPct = params.correctedSamplesThresholdPct ?? 5;
+  }
+
   performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
     const { connection: { id: connectionId } } = data;
     const issues = this.processData(data);
@@ -45,7 +56,7 @@ class NetworkMediaSyncIssueDetector extends BaseIssueDetector {
         correctedSamplesPct,
       };
 
-      if (correctedSamplesPct > 5) {
+      if (correctedSamplesPct > this.#correctedSamplesThresholdPct) {
         issues.push({
           statsSample,
           type: IssueType.Network,
