@@ -7,3 +7,4 @@ export { default as NetworkMediaSyncIssueDetector } from './NetworkMediaSyncIssu
 export { default as OutboundNetworkIssueDetector } from './OutboundNetworkIssueDetector';
 export { default as QualityLimitationsIssueDetector } from './QualityLimitationsIssueDetector';
 export { default as UnknownVideoDecoderImplementationDetector } from './UnknownVideoDecoderImplementationDetector';
+export { default as DeadVideoTrackDetector } from './DeadVideoTrackDetector';

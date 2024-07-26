@@ -58,6 +58,7 @@ import WebRTCIssueDetector, {
   NetworkMediaSyncIssueDetector,
   AvailableOutgoingBitrateIssueDetector,
   UnknownVideoDecoderImplementationDetector,
+  DeadVideoTrackDetector,
 } from 'webrtc-issue-detector';
 
 const widWithDefaultConstructorArgs = new WebRTCIssueDetector();
@@ -74,6 +75,7 @@ const widWithCustomConstructorArgs = new WebRTCIssueDetector({
     new NetworkMediaSyncIssueDetector(),
     new AvailableOutgoingBitrateIssueDetector(),
     new UnknownVideoDecoderImplementationDetector(),
+    new DeadVideoTrackDetector(),
   ],
   getStatsInterval: 10_000, // set custom stats parsing interval
   onIssues: (payload: IssueDetectorResult) => {
