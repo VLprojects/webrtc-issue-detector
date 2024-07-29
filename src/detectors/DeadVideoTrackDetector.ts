@@ -7,28 +7,6 @@ import {
 } from '../types';
 import BaseIssueDetector from './BaseIssueDetector';
 
-const sumStats = (
-  accessor: (stat: ParsedInboundVideoStreamStats) => number,
-  stats: ParsedInboundVideoStreamStats[],
-) => stats.reduce((sum, stat) => sum + accessor(stat), 0);
-
-const sumPacketsReceived = sumStats.bind(null, (stat) => stat.packetsReceived);
-const sumDecodedFrames = sumStats.bind(null, (stat) => stat.framesDecoded);
-
-const hasNewInboundTraffic = (data: WebRTCStatsParsed, prevData: WebRTCStatsParsed): boolean => {
-  const { video: { inbound: newInbound } } = data;
-  const { video: { inbound: prevInbound } } = prevData;
-
-  return sumPacketsReceived(newInbound) > sumPacketsReceived(prevInbound);
-};
-
-const hasNewDecodedFrames = (data: WebRTCStatsParsed, prevData: WebRTCStatsParsed): boolean => {
-  const { video: { inbound: newInbound } } = data;
-  const { video: { inbound: prevInbound } } = prevData;
-
-  return sumDecodedFrames(newInbound) > sumDecodedFrames(prevInbound);
-};
-
 class DeadVideoTrackDetector extends BaseIssueDetector {
   #lastMarkedAt: number | undefined;
 
@@ -55,30 +33,48 @@ class DeadVideoTrackDetector extends BaseIssueDetector {
       return issues;
     }
 
-    if (hasNewInboundTraffic(data, previousStats)) {
-      if (hasNewDecodedFrames(data, previousStats)) {
-        this.removeMarkIssue();
-      } else {
-        const hasIssue = this.markIssue();
+    const { video: { inbound: newInbound } } = data;
+    const { video: { inbound: prevInbound } } = previousStats;
 
-        if (hasIssue) {
-          const statsSample = {
-            packetsReceived: sumPacketsReceived(data.video.inbound),
-            framesDecoded: sumDecodedFrames(data.video.inbound),
-            deltaFramesDecoded: sumDecodedFrames(data.video.inbound) - sumDecodedFrames(previousStats.video.inbound),
-            deltaPacketsReceived:
-              sumPacketsReceived(data.video.inbound) - sumPacketsReceived(previousStats.video.inbound),
-          };
+    const mapByTrackId = (items: ParsedInboundVideoStreamStats[]) => new Map<string, ParsedInboundVideoStreamStats>(
+      items.map((item) => [item.track.trackIdentifier, item] as const),
+    );
 
-          issues.push({
-            statsSample,
-            type: IssueType.Stream,
-            reason: IssueReason.DeadVideoTrack,
-            iceCandidate: data.connection.local.id,
-          });
+    const newInboundByTrackId = mapByTrackId(newInbound);
+    const prevInboundByTrackId = mapByTrackId(prevInbound);
+
+    Array.from(newInboundByTrackId.entries()).forEach(([trackId, newInboundItem]) => {
+      const prevInboundItem = prevInboundByTrackId.get(trackId);
+      if (!prevInboundItem) {
+        return;
+      }
+
+      if (
+        newInboundItem.packetsReceived > prevInboundItem.packetsReceived
+      ) {
+        if (newInboundItem.framesDecoded > prevInboundItem.framesDecoded) {
+          this.removeMarkIssue();
+        } else {
+          const hasIssue = this.markIssue();
+
+          if (hasIssue) {
+            const statsSample = {
+              packetsReceived: newInboundItem.packetsReceived,
+              framesDecoded: newInboundItem.framesDecoded,
+              deltaFramesDecoded: newInboundItem.framesDecoded - prevInboundItem.framesDecoded,
+              deltaPacketsReceived: newInboundItem.packetsReceived - prevInboundItem.packetsReceived,
+            };
+
+            issues.push({
+              statsSample,
+              type: IssueType.Stream,
+              reason: IssueReason.DeadVideoTrack,
+              iceCandidate: trackId,
+            });
+          }
         }
       }
-    }
+    });
 
     return issues;
   }
