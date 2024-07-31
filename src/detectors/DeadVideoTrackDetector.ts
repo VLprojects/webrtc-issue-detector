@@ -7,14 +7,22 @@ import {
 } from '../types';
 import BaseIssueDetector from './BaseIssueDetector';
 
+interface DeadVideoTrackDetectorParams {
+  timeoutMs?: number;
+  framesDroppedThreshold?: number;
+}
+
 class DeadVideoTrackDetector extends BaseIssueDetector {
-  #lastMarkedAt: number | undefined;
+  readonly #lastMarkedAt = new Map<string, number>();
 
-  #timeoutMs: number;
+  readonly #timeoutMs: number;
 
-  constructor(params: { timeoutMs?: number } = {}) {
+  readonly #framesDroppedThreshold: number;
+
+  constructor(params: DeadVideoTrackDetectorParams = {}) {
     super();
     this.#timeoutMs = params.timeoutMs ?? 10_000;
+    this.#framesDroppedThreshold = params.framesDroppedThreshold ?? 0.5;
   }
 
   performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
@@ -42,60 +50,85 @@ class DeadVideoTrackDetector extends BaseIssueDetector {
 
     const newInboundByTrackId = mapByTrackId(newInbound);
     const prevInboundByTrackId = mapByTrackId(prevInbound);
+    const unvisitedTrackIds = new Set(this.#lastMarkedAt.keys());
 
     Array.from(newInboundByTrackId.entries()).forEach(([trackId, newInboundItem]) => {
+      unvisitedTrackIds.delete(trackId);
+
       const prevInboundItem = prevInboundByTrackId.get(trackId);
       if (!prevInboundItem) {
         return;
       }
 
-      if (
-        newInboundItem.packetsReceived > prevInboundItem.packetsReceived
-      ) {
-        if (newInboundItem.framesDecoded > prevInboundItem.framesDecoded) {
-          this.removeMarkIssue();
-        } else {
-          const hasIssue = this.markIssue();
+      const deltaFramesReceived = newInboundItem.framesReceived - prevInboundItem.framesReceived;
+      const deltaFramesDropped = newInboundItem.framesDropped - prevInboundItem.framesDropped;
+      const deltaFramesDecoded = newInboundItem.framesDecoded - prevInboundItem.framesDecoded;
+      const ratioFramesDropped = deltaFramesDropped / deltaFramesReceived;
 
-          if (hasIssue) {
-            const statsSample = {
-              packetsReceived: newInboundItem.packetsReceived,
-              framesDecoded: newInboundItem.framesDecoded,
-              deltaFramesDecoded: newInboundItem.framesDecoded - prevInboundItem.framesDecoded,
-              deltaPacketsReceived: newInboundItem.packetsReceived - prevInboundItem.packetsReceived,
-            };
-
-            issues.push({
-              statsSample,
-              type: IssueType.Stream,
-              reason: IssueReason.DeadVideoTrack,
-              iceCandidate: trackId,
-            });
-          }
-        }
+      if (deltaFramesReceived === 0) {
+        return;
       }
+
+      if (ratioFramesDropped >= this.#framesDroppedThreshold) {
+        return;
+      }
+
+      // It seems that track is alive and we can remove mark if it was marked
+      if (deltaFramesDecoded > 0) {
+        this.removeMarkIssue(trackId);
+        return;
+      }
+
+      const hasIssue = this.markIssue(trackId);
+
+      if (!hasIssue) {
+        return;
+      }
+
+      const statsSample = {
+        framesReceived: newInboundItem.framesReceived,
+        framesDropped: newInboundItem.framesDropped,
+        framesDecoded: newInboundItem.framesDecoded,
+        deltaFramesReceived,
+        deltaFramesDropped,
+        deltaFramesDecoded,
+      };
+
+      issues.push({
+        statsSample,
+        type: IssueType.Stream,
+        reason: IssueReason.DeadVideoTrack,
+        iceCandidate: trackId,
+      });
+    });
+
+    // just clear unvisited tracks from memory
+    unvisitedTrackIds.forEach((trackId) => {
+      this.removeMarkIssue(trackId);
     });
 
     return issues;
   }
 
-  private markIssue(): boolean {
+  private markIssue(trackId: string): boolean {
     const now = Date.now();
 
-    if (!this.#lastMarkedAt) {
-      this.#lastMarkedAt = now;
+    const lastMarkedAt = this.#lastMarkedAt.get(trackId);
+
+    if (!lastMarkedAt) {
+      this.#lastMarkedAt.set(trackId, now);
       return false;
     }
 
-    if (now - this.#lastMarkedAt < this.#timeoutMs) {
+    if (now - lastMarkedAt < this.#timeoutMs) {
       return false;
     }
 
     return true;
   }
 
-  private removeMarkIssue(): void {
-    this.#lastMarkedAt = undefined;
+  private removeMarkIssue(trackId: string): void {
+    this.#lastMarkedAt.delete(trackId);
   }
 }
 
