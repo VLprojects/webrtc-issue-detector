@@ -98,7 +98,7 @@ class DeadVideoTrackDetector extends BaseIssueDetector {
         statsSample,
         type: IssueType.Stream,
         reason: IssueReason.DeadVideoTrack,
-        iceCandidate: trackId,
+        trackIdentifier: trackId,
       });
     });
 
