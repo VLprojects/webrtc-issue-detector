@@ -7,19 +7,19 @@ import {
 } from '../types';
 import BaseIssueDetector from './BaseIssueDetector';
 
-interface DeadVideoTrackDetectorParams {
+interface FrozenVideoTrackDetectorParams {
   timeoutMs?: number;
   framesDroppedThreshold?: number;
 }
 
-class DeadVideoTrackDetector extends BaseIssueDetector {
+class FrozenVideoTrackDetector extends BaseIssueDetector {
   readonly #lastMarkedAt = new Map<string, number>();
 
   readonly #timeoutMs: number;
 
   readonly #framesDroppedThreshold: number;
 
-  constructor(params: DeadVideoTrackDetectorParams = {}) {
+  constructor(params: FrozenVideoTrackDetectorParams = {}) {
     super();
     this.#timeoutMs = params.timeoutMs ?? 10_000;
     this.#framesDroppedThreshold = params.framesDroppedThreshold ?? 0.5;
@@ -69,6 +69,7 @@ class DeadVideoTrackDetector extends BaseIssueDetector {
         return;
       }
 
+      // We skip it when ratio is too low because it should be handled by FramesDroppedIssueDetector
       if (ratioFramesDropped >= this.#framesDroppedThreshold) {
         return;
       }
@@ -132,4 +133,4 @@ class DeadVideoTrackDetector extends BaseIssueDetector {
   }
 }
 
-export default DeadVideoTrackDetector;
+export default FrozenVideoTrackDetector;
