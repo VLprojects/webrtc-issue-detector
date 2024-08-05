@@ -81,7 +81,7 @@ export enum IssueReason {
   UnknownVideoDecoderIssue = 'unknown-video-decoder',
   LowInboundMOS = 'low-inbound-mean-opinion-score',
   LowOutboundMOS = 'low-outbound-mean-opinion-score',
-  DeadVideoTrack = 'dead-video-track',
+  FrozenVideoTrack = 'frozen-video-track',
 }
 
 export type IssuePayload = {

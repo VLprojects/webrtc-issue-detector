@@ -98,7 +98,7 @@ class FrozenVideoTrackDetector extends BaseIssueDetector {
       issues.push({
         statsSample,
         type: IssueType.Stream,
-        reason: IssueReason.DeadVideoTrack,
+        reason: IssueReason.FrozenVideoTrack,
         trackIdentifier: trackId,
       });
     });
