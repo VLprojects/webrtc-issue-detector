@@ -1,6 +1,6 @@
 {
   "name": "webrtc-issue-detector",
-  "version": "1.12.0-LD-6968-dead-video-track-detect.1",
+  "version": "1.12.0-LD-6968-dead-video-track-detect.2",
   "description": "WebRTC diagnostic tool that detects issues with network or user devices",
   "repository": "git@github.com:VLprojects/webrtc-issue-detector.git",
   "author": "Roman Kuzakov <roman.kuzakov@gmail.com>",
