@@ -102,7 +102,7 @@ describe('wid/lib/PeriodicWebRTCStatsReporter', () => {
     reporter.startReporting();
     await clock.tickAsync(getStatsInterval);
 
-    expect(emitSpy).to.be.calledWith(PeriodicWebRTCStatsReporter.STATS_REPORTS_PARSED, { timeTaken: 0 });
+    expect(emitSpy).to.be.calledWith(PeriodicWebRTCStatsReporter.STATS_REPORTS_PARSED, { timeTaken: 0, reportItems: undefined });
   });
 
   it('should emit stats report ready event for each stats report item', async () => {
