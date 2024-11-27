@@ -4,7 +4,7 @@ import { WebRTCIssueEmitter } from './WebRTCIssueEmitter';
 
 export interface WIDWindow {
   wid: {
-    handleNewPeerConnection(params: { pc: RTCPeerConnection, id?: string }): void;
+    handleNewPeerConnection(pc: RTCPeerConnection, id?: string): void;
   },
 }
 

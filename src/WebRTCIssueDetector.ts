@@ -140,7 +140,7 @@ class WebRTCIssueDetector {
     this.statsReporter.stopReporting();
   }
 
-  public handleNewPeerConnection({ pc, id }: { pc: RTCPeerConnection, id?: string }): void {
+  public handleNewPeerConnection(pc: RTCPeerConnection, id?: string): void {
     if (!this.#running && this.autoAddPeerConnections) {
       this.logger.debug('Skip handling new peer connection. Detector is not running', pc);
       return;
@@ -180,7 +180,7 @@ class WebRTCIssueDetector {
     }
 
     const OriginalRTCPeerConnection = window.RTCPeerConnection;
-    const onConnectionCreated = (pc: RTCPeerConnection) => this.handleNewPeerConnection({ pc });
+    const onConnectionCreated = (pc: RTCPeerConnection) => this.handleNewPeerConnection(pc);
 
     function WIDRTCPeerConnection(rtcConfig?: RTCConfiguration) {
       const connection = new OriginalRTCPeerConnection(rtcConfig);
