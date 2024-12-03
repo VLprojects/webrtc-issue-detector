@@ -95,11 +95,18 @@ class WebRTCIssueDetector {
       this.calculateNetworkScores(report.stats);
     });
 
-    this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORTS_PARSED, (data: { timeTaken: number }) => {
+    this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORTS_PARSED, (data: {
+      timeTaken: number,
+      reportItems: StatsReportItem[],
+    }) => {
       const payload = {
         timeTaken: data.timeTaken,
         ts: Date.now(),
       };
+
+      if (params.onStats) {
+        params.onStats(data.reportItems);
+      }
 
       this.eventEmitter.emit(EventType.StatsParsingFinished, payload);
     });
@@ -133,7 +140,7 @@ class WebRTCIssueDetector {
     this.statsReporter.stopReporting();
   }
 
-  public handleNewPeerConnection(pc: RTCPeerConnection): void {
+  public handleNewPeerConnection(pc: RTCPeerConnection, id?: string): void {
     if (!this.#running && this.autoAddPeerConnections) {
       this.logger.debug('Skip handling new peer connection. Detector is not running', pc);
       return;
@@ -147,7 +154,7 @@ class WebRTCIssueDetector {
 
     this.logger.debug('Handling new peer connection', pc);
 
-    this.compositeStatsParser.addPeerConnection({ pc });
+    this.compositeStatsParser.addPeerConnection({ pc, id });
   }
 
   private emitIssues(issues: IssuePayload[]): void {

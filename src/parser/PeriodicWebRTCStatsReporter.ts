@@ -64,7 +64,7 @@ class PeriodicWebRTCStatsReporter extends EventEmitter {
     const reportItems = await this.compositeStatsParser.parse();
     const timeTaken = Date.now() - startTime;
 
-    this.emit(PeriodicWebRTCStatsReporter.STATS_REPORTS_PARSED, { timeTaken });
+    this.emit(PeriodicWebRTCStatsReporter.STATS_REPORTS_PARSED, { timeTaken, reportItems });
 
     reportItems.forEach((item: StatsReportItem) => {
       this.emit(PeriodicWebRTCStatsReporter.STATS_REPORT_READY_EVENT, item);

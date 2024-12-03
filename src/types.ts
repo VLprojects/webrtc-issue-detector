@@ -4,7 +4,7 @@ import { WebRTCIssueEmitter } from './WebRTCIssueEmitter';
 
 export interface WIDWindow {
   wid: {
-    handleNewPeerConnection(pc: RTCPeerConnection): void;
+    handleNewPeerConnection(pc: RTCPeerConnection, id?: string): void;
   },
 }
 
@@ -55,6 +55,7 @@ export type WebRTCIssueDetectorConstructorParams = {
   logger?: Logger,
   onIssues?: (payload: IssueDetectorResult) => void,
   onNetworkScoresUpdated?: (payload: NetworkScores) => void,
+  onStats?: (payload: StatsReportItem[]) => void,
   ignoreSSRCList?: number[],
   getStatsInterval?: number,
   autoAddPeerConnections?: boolean,
@@ -177,6 +178,7 @@ export type ParsedInboundAudioStreamStats = {
   },
   trackId: string,
   transportId: string,
+  trackIdentifier: string,
 };
 
 export type ParsedOutboundAudioStreamStats = {
@@ -268,6 +270,7 @@ export type ParsedInboundVideoStreamStats = {
   }
   trackId: string,
   transportId: string,
+  trackIdentifier: string,
 };
 
 export type ParsedOutboundVideoStreamStats = {
