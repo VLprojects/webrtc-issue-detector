@@ -83,6 +83,8 @@ export enum IssueReason {
   LowInboundMOS = 'low-inbound-mean-opinion-score',
   LowOutboundMOS = 'low-outbound-mean-opinion-score',
   FrozenVideoTrack = 'frozen-video-track',
+  MissingVideoStreamData = 'missing-video-stream-data',
+  MissingAudioStreamData = 'missing-audio-stream-data',
 }
 
 export type IssuePayload = {
