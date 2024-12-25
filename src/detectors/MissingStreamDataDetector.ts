@@ -1,10 +1,10 @@
 import {
+  CommonParsedInboundStreamStats,
   IssueDetectorResult,
+  IssuePayload,
   IssueReason,
   IssueType,
-  ParsedInboundAudioStreamStats,
-  ParsedInboundVideoStreamStats,
-  WebRTCStatsParsed,
+  WebRTCStatsParsed
 } from '../types';
 import BaseIssueDetector from './BaseIssueDetector';
 
@@ -18,7 +18,7 @@ export class MissingStreamDataDetector extends BaseIssueDetector {
 
   constructor(params: MissingStreamDetectorParams = {}) {
     super();
-    this.#timeoutMs = params.timeoutMs ?? 10_000;
+    this.#timeoutMs = params.timeoutMs ?? 5_000;
   }
 
   performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
@@ -29,99 +29,23 @@ export class MissingStreamDataDetector extends BaseIssueDetector {
   }
 
   private processData(data: WebRTCStatsParsed): IssueDetectorResult {
-    const { connection: { id: connectionId } } = data;
-    const previousStats = this.getLastProcessedStats(connectionId);
     const issues: IssueDetectorResult = [];
 
-    if (!previousStats) {
-      return issues;
-    }
-
     const { video: { inbound: newVideoInbound } } = data;
-    const { video: { inbound: prevVideoInbound } } = previousStats;
     const { audio: { inbound: newAudioInbound } } = data;
-    const { audio: { inbound: prevAudioInbound } } = previousStats;
 
-    const mapVideoStatsByTrackId = (items: ParsedInboundVideoStreamStats[]) => new Map<string, ParsedInboundVideoStreamStats>(
-      items.map((item) => [item.track.trackIdentifier, item] as const),
-    );
-    const mapAudioStatsByTrackId = (items: ParsedInboundAudioStreamStats[]) => new Map<string, ParsedInboundAudioStreamStats>(
-      items.map((item) => [item.track.trackIdentifier, item] as const),
-    );
+    issues.push(...this.detectMissingData(
+      newAudioInbound as unknown as CommonParsedInboundStreamStats[],
+      IssueType.Stream,
+      IssueReason.MissingAudioStreamData,
+    ));
+    issues.push(...this.detectMissingData(
+      newVideoInbound,
+      IssueType.Stream,
+      IssueReason.MissingVideoStreamData,
+    ));
 
-    const newVideoInboundByTrackId = mapVideoStatsByTrackId(newVideoInbound);
-    const prevVideoInboundByTrackId = mapVideoStatsByTrackId(prevVideoInbound);
-    const newAudioInboundByTrackId = mapAudioStatsByTrackId(newAudioInbound);
-    const prevAudioInboundByTrackId = mapAudioStatsByTrackId(prevAudioInbound);
     const unvisitedTrackIds = new Set(this.#lastMarkedAt.keys());
-
-    Array.from(newVideoInboundByTrackId.entries()).forEach(([trackId, newInboundItem]) => {
-      unvisitedTrackIds.delete(trackId);
-
-      const prevInboundItem = prevVideoInboundByTrackId.get(trackId);
-      if (!prevInboundItem) {
-        return;
-      }
-
-      const deltaFramesReceived = newInboundItem.framesReceived - prevInboundItem.framesReceived;
-
-      if (deltaFramesReceived === 0 && !newInboundItem.track.detached && !newInboundItem.track.ended) {
-        const hasIssue = this.markIssue(trackId);
-
-        if (!hasIssue) {
-          return;
-        }
-
-        const statsSample = {
-          framesReceived: newInboundItem.framesReceived,
-          framesDropped: newInboundItem.framesDropped,
-          trackDetached: newInboundItem.track.detached,
-          trackEnded: newInboundItem.track.ended,
-        };
-
-        issues.push({
-          type: IssueType.Stream,
-          reason: IssueReason.MissingVideoStreamData,
-          statsSample,
-        });
-      } else {
-        this.removeMarkIssue(trackId);
-      }
-    });
-
-    Array.from(newAudioInboundByTrackId.entries()).forEach(([trackId, newInboundItem]) => {
-      unvisitedTrackIds.delete(trackId);
-
-      const prevInboundItem = prevAudioInboundByTrackId.get(trackId);
-      if (!prevInboundItem) {
-        return;
-      }
-
-      const deltaFramesReceived = newInboundItem.bytesReceived - prevInboundItem.bytesReceived;
-
-      if (deltaFramesReceived === 0 && !newInboundItem.track.detached && !newInboundItem.track.ended) {
-        const hasIssue = this.markIssue(trackId);
-
-        if (!hasIssue) {
-          return;
-        }
-
-        const statsSample = {
-          bytesReceived: newInboundItem.bytesReceived,
-          packetsDiscarded: newInboundItem.packetsDiscarded,
-          trackDetached: newInboundItem.track.detached,
-          trackEnded: newInboundItem.track.ended,
-        };
-
-        issues.push({
-          type: IssueType.Stream,
-          reason: IssueReason.MissingAudioStreamData,
-          statsSample,
-        });
-      } else {
-        this.removeMarkIssue(trackId);
-      }
-    });
 
     unvisitedTrackIds.forEach((trackId) => {
       const lastMarkedAt = this.#lastMarkedAt.get(trackId);
@@ -131,6 +55,39 @@ export class MissingStreamDataDetector extends BaseIssueDetector {
     });
 
     return issues;
+  }
+
+  private detectMissingData(commonStreamStats: CommonParsedInboundStreamStats[], type: IssueType, reason: IssueReason): IssueDetectorResult {
+    const issues: IssuePayload[] = [];
+
+    commonStreamStats.forEach((inboundItem) => {
+      const trackId = inboundItem.track.trackIdentifier
+
+      if (inboundItem.bytesReceived === 0 && !inboundItem.track.detached && !inboundItem.track.ended) {
+        const hasIssue = this.markIssue(trackId);
+
+        if (!hasIssue) {
+          return;
+        }
+
+        const statsSample = {
+          bytesReceived: inboundItem.bytesReceived,
+          trackDetached: inboundItem.track.detached,
+          trackEnded: inboundItem.track.ended,
+        };
+
+        issues.push({
+          type,
+          reason,
+          statsSample,
+          trackIdentifier: trackId,
+        });
+      } else {
+        this.removeMarkIssue(trackId);
+      }
+    });
+
+    return issues
   }
 
   private markIssue(trackId: string): boolean {
