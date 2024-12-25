@@ -435,3 +435,16 @@ export interface Logger {
   warn: (msg: any, ...meta: any[]) => void;
   error: (msg: any, ...meta: any[]) => void;
 }
+
+type CommonKeys<T, U> = Extract<keyof T, keyof U>;
+
+type CommonFields<T, U> = {
+  [K in CommonKeys<T, U>]: T[K] extends object
+    ? U[K] extends object
+      ? CommonFields<T[K], U[K]> // Recursively check nested objects
+      : never
+    : T[K];
+};
+
+
+export type CommonParsedInboundStreamStats = CommonFields<ParsedInboundVideoStreamStats, ParsedInboundAudioStreamStats>
