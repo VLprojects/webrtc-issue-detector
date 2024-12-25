@@ -24,6 +24,7 @@ import {
   QualityLimitationsIssueDetector,
   UnknownVideoDecoderImplementationDetector,
   FrozenVideoTrackDetector,
+  VideoDecoderIssueDetector,
 } from './detectors';
 import { CompositeRTCStatsParser, RTCStatsParser } from './parser';
 import createLogger from './utils/logger';
@@ -67,6 +68,7 @@ class WebRTCIssueDetector {
       new AvailableOutgoingBitrateIssueDetector(),
       new UnknownVideoDecoderImplementationDetector(),
       new FrozenVideoTrackDetector(),
+      new VideoDecoderIssueDetector(),
     ];
 
     this.networkScoresCalculator = params.networkScoresCalculator ?? new DefaultNetworkScoresCalculator();

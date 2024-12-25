@@ -8,3 +8,4 @@ export { default as OutboundNetworkIssueDetector } from './OutboundNetworkIssueD
 export { default as QualityLimitationsIssueDetector } from './QualityLimitationsIssueDetector';
 export { default as UnknownVideoDecoderImplementationDetector } from './UnknownVideoDecoderImplementationDetector';
 export { default as FrozenVideoTrackDetector } from './FrozenVideoTrackDetector';
+export { default as VideoDecoderIssueDetector } from './VideoDecoderIssueDetector';
