@@ -1,6 +1,6 @@
 import { IssueDetector, IssueDetectorResult, WebRTCStatsParsed } from '../types';
 import { scheduleTask } from '../utils/tasks';
-import { CLEANUP_PREV_STATS_TTL_MS } from '../utils/constants';
+import { CLEANUP_PREV_STATS_TTL_MS, MAX_PARSED_STATS_STORAGE_SIZE } from '../utils/constants';
 
 export interface PrevStatsCleanupPayload {
   connectionId: string;
@@ -9,16 +9,19 @@ export interface PrevStatsCleanupPayload {
 
 export interface BaseIssueDetectorParams {
   statsCleanupTtlMs?: number;
+  maxParsedStatsStorageSize?: number;
 }
 
 abstract class BaseIssueDetector implements IssueDetector {
-  readonly #lastProcessedStats: Map<string, WebRTCStatsParsed | undefined>;
+  readonly #parsedStatsStorage: Map<string, WebRTCStatsParsed[]> = new Map();
 
   readonly #statsCleanupDelayMs: number;
 
+  readonly #maxParsedStatsStorageSize: number;
+
   constructor(params: BaseIssueDetectorParams = {}) {
-    this.#lastProcessedStats = new Map();
     this.#statsCleanupDelayMs = params.statsCleanupTtlMs ?? CLEANUP_PREV_STATS_TTL_MS;
+    this.#maxParsedStatsStorageSize = params.maxParsedStatsStorageSize ?? MAX_PARSED_STATS_STORAGE_SIZE;
   }
 
   abstract performDetection(data: WebRTCStatsParsed): IssueDetectorResult;
@@ -36,7 +39,7 @@ abstract class BaseIssueDetector implements IssueDetector {
   protected performPrevStatsCleanup(payload: PrevStatsCleanupPayload): void {
     const { connectionId, cleanupCallback } = payload;
 
-    if (!this.#lastProcessedStats.has(connectionId)) {
+    if (!this.#parsedStatsStorage.has(connectionId)) {
       return;
     }
 
@@ -54,15 +57,31 @@ abstract class BaseIssueDetector implements IssueDetector {
   }
 
   protected setLastProcessedStats(connectionId: string, parsedStats: WebRTCStatsParsed): void {
-    this.#lastProcessedStats.set(connectionId, parsedStats);
+    if (!connectionId || parsedStats.connection.id !== connectionId) {
+      return;
+    }
+
+    const connectionStats = this.#parsedStatsStorage.get(connectionId) ?? [];
+    connectionStats.push(parsedStats);
+
+    if (connectionStats.length > this.#maxParsedStatsStorageSize) {
+      connectionStats.shift();
+    }
+
+    this.#parsedStatsStorage.set(connectionId, connectionStats);
   }
 
   protected getLastProcessedStats(connectionId: string): WebRTCStatsParsed | undefined {
-    return this.#lastProcessedStats.get(connectionId);
+    const connectionStats = this.#parsedStatsStorage.get(connectionId);
+    return connectionStats?.[connectionStats.length - 1];
+  }
+
+  protected getAllLastProcessedStats(connectionId: string): WebRTCStatsParsed[] {
+    return this.#parsedStatsStorage.get(connectionId) ?? [];
   }
 
   private deleteLastProcessedStats(connectionId: string): void {
-    this.#lastProcessedStats.delete(connectionId);
+    this.#parsedStatsStorage.delete(connectionId);
   }
 }
 

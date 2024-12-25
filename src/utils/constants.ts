@@ -1,2 +1,3 @@
-// eslint-disable-next-line import/prefer-default-export
 export const CLEANUP_PREV_STATS_TTL_MS = 35_000;
+
+export const MAX_PARSED_STATS_STORAGE_SIZE = 5;
