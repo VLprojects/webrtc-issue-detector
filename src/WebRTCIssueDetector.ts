@@ -27,7 +27,7 @@ import {
 } from './detectors';
 import { CompositeRTCStatsParser, RTCStatsParser } from './parser';
 import createLogger from './utils/logger';
-import { MissingStreamDataDetector } from './detectors/MissingStreamDataDetector';
+import MissingStreamDataDetector from './detectors/MissingStreamDataDetector';
 
 class WebRTCIssueDetector {
   readonly eventEmitter: WebRTCIssueEmitter;

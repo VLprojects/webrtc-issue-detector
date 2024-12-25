@@ -446,5 +446,4 @@ type CommonFields<T, U> = {
     : T[K];
 };
 
-
-export type CommonParsedInboundStreamStats = CommonFields<ParsedInboundVideoStreamStats, ParsedInboundAudioStreamStats>
+export type CommonParsedInboundStreamStats = CommonFields<ParsedInboundVideoStreamStats, ParsedInboundAudioStreamStats>;

@@ -4,7 +4,7 @@ import {
   IssuePayload,
   IssueReason,
   IssueType,
-  WebRTCStatsParsed
+  WebRTCStatsParsed,
 } from '../types';
 import BaseIssueDetector from './BaseIssueDetector';
 
@@ -12,8 +12,9 @@ interface MissingStreamDetectorParams {
   timeoutMs?: number;
 }
 
-export class MissingStreamDataDetector extends BaseIssueDetector {
+export default class MissingStreamDataDetector extends BaseIssueDetector {
   readonly #lastMarkedAt = new Map<string, number>();
+
   readonly #timeoutMs: number;
 
   constructor(params: MissingStreamDetectorParams = {}) {
@@ -57,11 +58,15 @@ export class MissingStreamDataDetector extends BaseIssueDetector {
     return issues;
   }
 
-  private detectMissingData(commonStreamStats: CommonParsedInboundStreamStats[], type: IssueType, reason: IssueReason): IssueDetectorResult {
+  private detectMissingData(
+    commonStreamStats: CommonParsedInboundStreamStats[],
+    type: IssueType,
+    reason: IssueReason,
+  ): IssueDetectorResult {
     const issues: IssuePayload[] = [];
 
     commonStreamStats.forEach((inboundItem) => {
-      const trackId = inboundItem.track.trackIdentifier
+      const trackId = inboundItem.track.trackIdentifier;
 
       if (inboundItem.bytesReceived === 0 && !inboundItem.track.detached && !inboundItem.track.ended) {
         const hasIssue = this.markIssue(trackId);
@@ -87,7 +92,7 @@ export class MissingStreamDataDetector extends BaseIssueDetector {
       }
     });
 
-    return issues
+    return issues;
   }
 
   private markIssue(trackId: string): boolean {
@@ -106,4 +111,3 @@ export class MissingStreamDataDetector extends BaseIssueDetector {
     this.#lastMarkedAt.delete(trackId);
   }
 }
-
