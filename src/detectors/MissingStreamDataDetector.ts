@@ -19,7 +19,7 @@ export default class MissingStreamDataDetector extends BaseIssueDetector {
 
   constructor(params: MissingStreamDetectorParams = {}) {
     super();
-    this.#timeoutMs = params.timeoutMs ?? 5_000;
+    this.#timeoutMs = params.timeoutMs ?? 10_000;
   }
 
   performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
@@ -32,19 +32,31 @@ export default class MissingStreamDataDetector extends BaseIssueDetector {
   private processData(data: WebRTCStatsParsed): IssueDetectorResult {
     const issues: IssueDetectorResult = [];
 
+    const prevData = this.getLastProcessedStats(data.connection.id);
+
     const { video: { inbound: newVideoInbound } } = data;
     const { audio: { inbound: newAudioInbound } } = data;
+    const prevVideoInbound = prevData?.video.inbound;
+    const prevAudioInbound = prevData?.audio.inbound;
 
-    issues.push(...this.detectMissingData(
-      newAudioInbound as unknown as CommonParsedInboundStreamStats[],
-      IssueType.Stream,
-      IssueReason.MissingAudioStreamData,
-    ));
-    issues.push(...this.detectMissingData(
-      newVideoInbound,
-      IssueType.Stream,
-      IssueReason.MissingVideoStreamData,
-    ));
+
+    if (prevAudioInbound) {
+      issues.push(...this.detectMissingData(
+        newAudioInbound as unknown as CommonParsedInboundStreamStats[],
+        prevAudioInbound as unknown as CommonParsedInboundStreamStats[],
+        IssueType.Stream,
+        IssueReason.MissingAudioStreamData,
+      ));
+    }
+
+    if (prevVideoInbound) {
+      issues.push(...this.detectMissingData(
+        newVideoInbound,
+        prevVideoInbound,
+        IssueType.Stream,
+        IssueReason.MissingVideoStreamData,
+      ));
+    }
 
     const unvisitedTrackIds = new Set(this.#lastMarkedAt.keys());
 
@@ -59,16 +71,32 @@ export default class MissingStreamDataDetector extends BaseIssueDetector {
   }
 
   private detectMissingData(
-    commonStreamStats: CommonParsedInboundStreamStats[],
+    currentCommonInboundStats: CommonParsedInboundStreamStats[],
+    previousCommonInboundStats: CommonParsedInboundStreamStats[],
+    // commonStreamStats: CommonParsedInboundStreamStats[],
     type: IssueType,
     reason: IssueReason,
   ): IssueDetectorResult {
     const issues: IssuePayload[] = [];
 
-    commonStreamStats.forEach((inboundItem) => {
+    const mapStatsByTrackId = (items: CommonParsedInboundStreamStats[]) => new Map<string, CommonParsedInboundStreamStats>(
+      items.map((item) => [item.track.trackIdentifier, item] as const),
+    );
+
+    const prevInboundItemsByTrackId = mapStatsByTrackId(previousCommonInboundStats);
+
+    currentCommonInboundStats.forEach((inboundItem) => {
       const trackId = inboundItem.track.trackIdentifier;
 
-      if (inboundItem.bytesReceived === 0 && !inboundItem.track.detached && !inboundItem.track.ended) {
+      const prevInboundItem = prevInboundItemsByTrackId.get(trackId);
+      if (!prevInboundItem) {
+        return;
+      }
+
+      const bytesReceivedDelta = inboundItem.bytesReceived - prevInboundItem.bytesReceived;
+
+
+      if (bytesReceivedDelta === 0 && !inboundItem.track.detached && !inboundItem.track.ended) {
         const hasIssue = this.markIssue(trackId);
 
         if (!hasIssue) {
@@ -76,6 +104,7 @@ export default class MissingStreamDataDetector extends BaseIssueDetector {
         }
 
         const statsSample = {
+          bytesReceivedDelta,
           bytesReceived: inboundItem.bytesReceived,
           trackDetached: inboundItem.track.detached,
           trackEnded: inboundItem.track.ended,
