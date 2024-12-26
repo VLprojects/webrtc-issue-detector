@@ -235,6 +235,23 @@ const exampleIssue = {
 }
 ```
 
+
+### MissingStreamDataDetector
+Detects issues with missing data in active inbound streams
+```ts
+const exampleIssue = {
+    type: 'stream',
+    reason: 'missing-video-stream-data' | 'missing-audio-stream-data',
+    trackIdentifier: 'some-track-id',
+    statsSample: {
+        bytesReceivedDelta: 0, // always zero if issue detected
+        bytesReceived: 2392384,
+        trackDetached: false,
+        trackEnded: false,
+    },
+}
+```
+
 ## Roadmap
 
 - [ ] Adaptive getStats() call interval based on last getStats() execution time 
