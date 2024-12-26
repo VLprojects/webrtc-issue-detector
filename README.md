@@ -112,6 +112,12 @@ Detects issues with decoder.
 const exampleIssue = {
     type: 'cpu',
     reason: 'decoder-cpu-throttling',
+    statsSample: {
+      affectedStreamsPercent: 67,
+      throtthedStreams: [
+        { ssrc: 123, allDecodeTimePerFrame: [1.2, 1.6, 1.9, 2.4, 2.9], volatility: 1.7 },
+      ]
+    },
 }
 ```
 
