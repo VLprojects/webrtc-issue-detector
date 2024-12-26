@@ -1,23 +1,25 @@
 import {
   IssueDetectorResult,
+  IssueReason,
+  IssueType,
   WebRTCStatsParsed,
 } from '../types';
 import BaseIssueDetector, { BaseIssueDetectorParams } from './BaseIssueDetector';
 
 interface VideoDecoderIssueDetectorParams extends BaseIssueDetectorParams {
-  decodeTimePerFrameIncreaseSpeedThreshold?: number;
-  minDecodeTimePerFrameIncreaseCases?: number;
+  volatilityThreshold?: number;
+  affectedStreamsPercentThreshold?: number;
 }
 
 class VideoDecoderIssueDetector extends BaseIssueDetector {
-  #decodeTimePerFrameIncreaseSpeedThreshold: number;
+  #volatilityThreshold: number;
 
-  #minDecodeTimePerFrameIncreaseCases: number;
+  #affectedStreamsPercentThreshold: number;
 
   constructor(params: VideoDecoderIssueDetectorParams = {}) {
     super(params);
-    this.#decodeTimePerFrameIncreaseSpeedThreshold = params.decodeTimePerFrameIncreaseSpeedThreshold ?? 1.05;
-    this.#minDecodeTimePerFrameIncreaseCases = params.minDecodeTimePerFrameIncreaseCases ?? 3;
+    this.#volatilityThreshold = params.volatilityThreshold ?? 1.5;
+    this.#affectedStreamsPercentThreshold = params.affectedStreamsPercentThreshold ?? 50;
   }
 
   performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
@@ -28,41 +30,83 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
   }
 
   private processData(data: WebRTCStatsParsed): IssueDetectorResult {
-    const currentIncomeVideoStreams = data.video.inbound;
-    const allLastProcessedStats = this
-      .getAllLastProcessedStats(data.connection.id);
-
     const issues: IssueDetectorResult = [];
 
-    currentIncomeVideoStreams.forEach((incomeVideoStream) => {
-      const lastIncomeVideoStreamStats = allLastProcessedStats
-        .map((connectionStats) => connectionStats.video.inbound.find(
-          (videoStreamStats) => videoStreamStats.id === incomeVideoStream.id,
-        ))
-        .filter((stats) => (stats?.framesDecoded || 0) > 0 && (stats?.totalDecodeTime || 0) > 0);
+    const allProcessedStats = [
+      ...this.getAllLastProcessedStats(data.connection.id),
+      data,
+    ];
 
-      if (lastIncomeVideoStreamStats.length < this.#minDecodeTimePerFrameIncreaseCases) {
-        return;
-      }
+    const throtthedStreams = data.video.inbound
+      .map((incomeVideoStream) => {
+        const allDecodeTimePerFrame: number[] = [];
 
-      const decodeTimePerFrame = lastIncomeVideoStreamStats
-        .map((stats) => (stats!.totalDecodeTime * 1000) / stats!.framesDecoded);
+        // We need at least 4 elements to have enough representation
+        if (allProcessedStats.length < 4) {
+          return;
+        }
 
-      const currentDecodeTimePerFrame = (incomeVideoStream.totalDecodeTime * 1000) / incomeVideoStream.framesDecoded;
-      decodeTimePerFrame.push(currentDecodeTimePerFrame);
+        // exclude first element to calculate accurate delta
+        for (let i = 1; i < allProcessedStats.length; i += 1) {
+          let deltaFramesDecoded = 0;
+          let deltaTotalDecodeTime = 0;
+          let decodeTimePerFrame = 0;
 
-      const mean = decodeTimePerFrame.reduce((acc, val) => acc + val, 0) / decodeTimePerFrame.length;
-      const squaredDiffs = decodeTimePerFrame.map((val) => (val - mean) ** 2);
-      const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / squaredDiffs.length;
-      const volatility = Math.sqrt(variance);
+          const videoStreamStats = allProcessedStats[i].video.inbound.find(
+            (stream) => stream.id === incomeVideoStream.id,
+          );
 
-      console.log({
-        decodeTimePerFrame,
-        mean,
-        variance,
-        volatility,
+          if (!videoStreamStats) {
+            continue;
+          }
+
+          const prevVideoStreamStats = allProcessedStats[i - 1].video.inbound.find(
+            (stream) => stream.id === incomeVideoStream.id,
+          );
+
+          if (prevVideoStreamStats) {
+            deltaFramesDecoded = videoStreamStats.framesDecoded - prevVideoStreamStats.framesDecoded;
+            deltaTotalDecodeTime = videoStreamStats.totalDecodeTime - prevVideoStreamStats.totalDecodeTime;
+          }
+
+          if (deltaTotalDecodeTime > 0 && deltaFramesDecoded > 0) {
+            decodeTimePerFrame = deltaTotalDecodeTime * 1000 / deltaFramesDecoded;
+          }
+          
+          allDecodeTimePerFrame.push(decodeTimePerFrame);
+        }
+
+        // Calculate volatility
+        const mean = allDecodeTimePerFrame.reduce((acc, val) => acc + val, 0) / allDecodeTimePerFrame.length;
+        const squaredDiffs = allDecodeTimePerFrame.map((val) => (val - mean) ** 2);
+        const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / squaredDiffs.length;
+        const volatility = Math.sqrt(variance);
+
+        const isDecodeTimePerFrameIncrease = allDecodeTimePerFrame.every(
+          (decodeTimePerFrame, index) => {
+            return index === 0 || decodeTimePerFrame > allDecodeTimePerFrame[index - 1];
+          },
+        );
+
+        console.log({
+          allDecodeTimePerFrame,
+          isDecodeTimePerFrameIncrease,
+          mean,
+          volatility,
+        });
+
+        return volatility > this.#volatilityThreshold && isDecodeTimePerFrameIncrease;
+      })
+      .filter((throttled) => throttled);
+
+
+    const affectedStreamsPercent = throtthedStreams.length / (data.video.inbound.length / 100);
+    if (affectedStreamsPercent > this.#affectedStreamsPercentThreshold) {
+      issues.push({
+        type: IssueType.CPU,
+        reason: IssueReason.DecoderCPUThrottling,
       });
-    });
+    }
 
     return issues;
   }
