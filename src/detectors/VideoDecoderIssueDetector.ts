@@ -95,9 +95,13 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
           volatility,
         });
 
-        return volatility > this.#volatilityThreshold && isDecodeTimePerFrameIncrease;
+        if (volatility > this.#volatilityThreshold && isDecodeTimePerFrameIncrease) {
+          return { ssrc: incomeVideoStream.ssrc, allDecodeTimePerFrame, volatility, };
+        } else {
+          return undefined;
+        }
       })
-      .filter((throttled) => throttled);
+      .filter((throttledVideoStream) => Boolean(throttledVideoStream));
 
 
     const affectedStreamsPercent = throtthedStreams.length / (data.video.inbound.length / 100);
@@ -105,6 +109,10 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
       issues.push({
         type: IssueType.CPU,
         reason: IssueReason.DecoderCPUThrottling,
+        statsSample: {
+          affectedStreamsPercent,
+          throtthedStreams: throtthedStreams,
+        }
       });
     }
 

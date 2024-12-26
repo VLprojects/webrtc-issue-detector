@@ -69,7 +69,7 @@ class FrozenVideoTrackDetector extends BaseIssueDetector {
         return;
       }
 
-      // We skip it when ratio is too low because it should be handled by FramesDroppedIssueDetector
+      // We skip it when ratio is too low because it should be handled by VideoDecoderIssueDetector
       if (ratioFramesDropped >= this.#framesDroppedThreshold) {
         return;
       }

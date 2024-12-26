@@ -16,7 +16,6 @@ import PeriodicWebRTCStatsReporter from './parser/PeriodicWebRTCStatsReporter';
 import DefaultNetworkScoresCalculator from './NetworkScoresCalculator';
 import {
   AvailableOutgoingBitrateIssueDetector,
-  FramesDroppedIssueDetector,
   FramesEncodedSentIssueDetector,
   InboundNetworkIssueDetector,
   NetworkMediaSyncIssueDetector,
@@ -60,7 +59,6 @@ class WebRTCIssueDetector {
 
     this.detectors = params.detectors ?? [
       new QualityLimitationsIssueDetector(),
-      new FramesDroppedIssueDetector(),
       new FramesEncodedSentIssueDetector(),
       new InboundNetworkIssueDetector(),
       new OutboundNetworkIssueDetector(),

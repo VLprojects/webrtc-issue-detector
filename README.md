@@ -51,7 +51,6 @@ By default, WebRTCIssueDetector can be created with minimum of mandatory constru
 ```typescript
 import WebRTCIssueDetector, {
   QualityLimitationsIssueDetector,
-  FramesDroppedIssueDetector,
   FramesEncodedSentIssueDetector,
   InboundNetworkIssueDetector,
   OutboundNetworkIssueDetector,
@@ -59,6 +58,7 @@ import WebRTCIssueDetector, {
   AvailableOutgoingBitrateIssueDetector,
   UnknownVideoDecoderImplementationDetector,
   FrozenVideoTrackDetector,
+  VideoDecoderIssueDetector,
 } from 'webrtc-issue-detector';
 
 const widWithDefaultConstructorArgs = new WebRTCIssueDetector();
@@ -68,7 +68,6 @@ const widWithDefaultConstructorArgs = new WebRTCIssueDetector();
 const widWithCustomConstructorArgs = new WebRTCIssueDetector({
   detectors: [ // you are free to change the detectors list according to your needs
     new QualityLimitationsIssueDetector(),
-    new FramesDroppedIssueDetector(),
     new FramesEncodedSentIssueDetector(),
     new InboundNetworkIssueDetector(),
     new OutboundNetworkIssueDetector(),
@@ -76,6 +75,7 @@ const widWithCustomConstructorArgs = new WebRTCIssueDetector({
     new AvailableOutgoingBitrateIssueDetector(),
     new UnknownVideoDecoderImplementationDetector(),
     new FrozenVideoTrackDetector(),
+    new VideoDecoderIssueDetector(),
   ],
   getStatsInterval: 10_000, // set custom stats parsing interval
   onIssues: (payload: IssueDetectorResult) => {
@@ -106,19 +106,12 @@ const exampleIssue = {
 }
 ```
 
-### FramesDroppedIssueDetector
+### VideoDecoderIssueDetector
 Detects issues with decoder.
 ```js
 const exampleIssue = {
     type: 'cpu',
     reason: 'decoder-cpu-throttling',
-    statsSample: {
-      deltaFramesDropped: 100,
-      deltaFramesReceived: 1000,
-      deltaFramesDecoded: 900,
-      framesDroppedPct: 10,
-    },
-    ssrc: 1234,
 }
 ```
 
