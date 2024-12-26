@@ -38,12 +38,12 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
     ];
 
     const throtthedStreams = data.video.inbound
-      .map((incomeVideoStream) => {
+      .map((incomeVideoStream): { ssrc: number, allDecodeTimePerFrame: number[], volatility: number } | undefined => {
         const allDecodeTimePerFrame: number[] = [];
 
         // We need at least 4 elements to have enough representation
         if (allProcessedStats.length < 4) {
-          return;
+          return undefined;
         }
 
         // exclude first element to calculate accurate delta
@@ -72,7 +72,7 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
           if (deltaTotalDecodeTime > 0 && deltaFramesDecoded > 0) {
             decodeTimePerFrame = deltaTotalDecodeTime * 1000 / deltaFramesDecoded;
           }
-          
+
           allDecodeTimePerFrame.push(decodeTimePerFrame);
         }
 
@@ -83,9 +83,7 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
         const volatility = Math.sqrt(variance);
 
         const isDecodeTimePerFrameIncrease = allDecodeTimePerFrame.every(
-          (decodeTimePerFrame, index) => {
-            return index === 0 || decodeTimePerFrame > allDecodeTimePerFrame[index - 1];
-          },
+          (decodeTimePerFrame, index) => index === 0 || decodeTimePerFrame > allDecodeTimePerFrame[index - 1],
         );
 
         console.log({
@@ -96,23 +94,24 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
         });
 
         if (volatility > this.#volatilityThreshold && isDecodeTimePerFrameIncrease) {
-          return { ssrc: incomeVideoStream.ssrc, allDecodeTimePerFrame, volatility, };
-        } else {
-          return undefined;
+          console.log('CPU THROTTLE SUSPECTED FOR STREAM', incomeVideoStream.ssrc);
+          return { ssrc: incomeVideoStream.ssrc, allDecodeTimePerFrame, volatility };
         }
+
+        return undefined;
       })
       .filter((throttledVideoStream) => Boolean(throttledVideoStream));
 
-
     const affectedStreamsPercent = throtthedStreams.length / (data.video.inbound.length / 100);
     if (affectedStreamsPercent > this.#affectedStreamsPercentThreshold) {
+      console.log('CPU THROTTLE DETECTED');
       issues.push({
         type: IssueType.CPU,
         reason: IssueReason.DecoderCPUThrottling,
         statsSample: {
           affectedStreamsPercent,
-          throtthedStreams: throtthedStreams,
-        }
+          throtthedStreams,
+        },
       });
     }
 
