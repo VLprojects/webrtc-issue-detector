@@ -70,7 +70,7 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
           }
 
           if (deltaTotalDecodeTime > 0 && deltaFramesDecoded > 0) {
-            decodeTimePerFrame = deltaTotalDecodeTime * 1000 / deltaFramesDecoded;
+            decodeTimePerFrame = (deltaTotalDecodeTime * 1000) / deltaFramesDecoded;
           }
 
           allDecodeTimePerFrame.push(decodeTimePerFrame);
