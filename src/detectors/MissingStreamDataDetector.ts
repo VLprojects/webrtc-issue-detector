@@ -121,7 +121,9 @@ export default class MissingStreamDataDetector extends BaseIssueDetector {
     return issues;
   }
 
-  private static mapStatsByTrackId(items: CommonParsedInboundStreamStats[][]): Map<string, CommonParsedInboundStreamStats[]> {
+  private static mapStatsByTrackId(
+    items: CommonParsedInboundStreamStats[][],
+  ): Map<string, CommonParsedInboundStreamStats[]> {
     const statsById = new Map<string, CommonParsedInboundStreamStats[]>();
     items.forEach((inboundItems) => {
       inboundItems.forEach((inbountItem) => {
@@ -129,13 +131,16 @@ export default class MissingStreamDataDetector extends BaseIssueDetector {
         accumulatedItems.push(inbountItem);
         statsById.set(inbountItem.track.trackIdentifier, accumulatedItems);
       });
-    })
+    });
 
     return statsById;
   }
 
-  private static isAllBytesReceivedDidntChange(bytesReceived: number, inboundItems: CommonParsedInboundStreamStats[]): boolean {
-    for (const inboundItem of inboundItems) {
+  private static isAllBytesReceivedDidntChange(
+    bytesReceived: number, inboundItems: CommonParsedInboundStreamStats[],
+  ): boolean {
+    for (let i = 0; i < inboundItems.length; i += 1) {
+      const inboundItem = inboundItems[i];
       if (inboundItem.bytesReceived !== bytesReceived) {
         return false;
       }
