@@ -9,6 +9,7 @@ import {
 import BaseIssueDetector from './BaseIssueDetector';
 
 interface MissingStreamDetectorParams {
+  timeoutMs?: number; // delay to report the issue no more often then once specified value
   steps?: number; // number of last stats to check
 }
 
@@ -21,7 +22,7 @@ export default class MissingStreamDataDetector extends BaseIssueDetector {
 
   constructor(params: MissingStreamDetectorParams = {}) {
     super();
-    this.#timeoutMs = 5_000;
+    this.#timeoutMs = params.timeoutMs ?? 15_000;
     this.#steps = params.steps ?? 3;
   }
 
@@ -40,19 +41,19 @@ export default class MissingStreamDataDetector extends BaseIssueDetector {
       return issues;
     }
 
-    const lastThreeProcessedStats = allLastProcessedStats.slice(-this.#steps);
+    const lastNProcessedStats = allLastProcessedStats.slice(-this.#steps);
 
-    const lastThreeVideoInbound = lastThreeProcessedStats.map((stats) => stats.video.inbound);
-    const lastThreeAudioInbound = lastThreeProcessedStats.map((stats) => stats.audio.inbound);
+    const lastNVideoInbound = lastNProcessedStats.map((stats) => stats.video.inbound);
+    const lastNAudioInbound = lastNProcessedStats.map((stats) => stats.audio.inbound);
 
     issues.push(...this.detectMissingData(
-      lastThreeAudioInbound as unknown as CommonParsedInboundStreamStats[][],
+      lastNAudioInbound as unknown as CommonParsedInboundStreamStats[][],
       IssueType.Stream,
       IssueReason.MissingAudioStreamData,
     ));
 
     issues.push(...this.detectMissingData(
-      lastThreeVideoInbound,
+      lastNVideoInbound,
       IssueType.Stream,
       IssueReason.MissingVideoStreamData,
     ));
@@ -70,25 +71,21 @@ export default class MissingStreamDataDetector extends BaseIssueDetector {
   }
 
   private detectMissingData(
-    lastThreeInboundStats: CommonParsedInboundStreamStats[][],
+    lastNInboundStats: CommonParsedInboundStreamStats[][],
     type: IssueType,
     reason: IssueReason,
   ): IssueDetectorResult {
     const issues: IssuePayload[] = [];
 
-    const firstInboundStats = lastThreeInboundStats[0];
-    const secondInboundStats = lastThreeInboundStats[1];
-    const currentInboundStats = lastThreeInboundStats[2];
-
-    const firstInboundItemsByTrackId = MissingStreamDataDetector.mapStatsByTrackId(firstInboundStats);
-    const secondInboundItemsByTrackId = MissingStreamDataDetector.mapStatsByTrackId(secondInboundStats);
+    const currentInboundStats = lastNInboundStats.pop()!;
+    const prevInboundItemsByTrackId = MissingStreamDataDetector.mapStatsByTrackId(lastNInboundStats);
 
     currentInboundStats.forEach((inboundItem) => {
       const trackId = inboundItem.track.trackIdentifier;
 
-      const firstInboundItem = firstInboundItemsByTrackId.get(trackId);
-      const secondInboundItem = secondInboundItemsByTrackId.get(trackId);
-      if (!firstInboundItem || !secondInboundItem) {
+      const prevInboundItems = prevInboundItemsByTrackId.get(trackId);
+
+      if (!Array.isArray(prevInboundItems) || prevInboundItems.length === 0) {
         return;
       }
 
@@ -96,10 +93,7 @@ export default class MissingStreamDataDetector extends BaseIssueDetector {
         return;
       }
 
-      if (
-        firstInboundItem.bytesReceived === secondInboundItem.bytesReceived
-        && secondInboundItem.bytesReceived === inboundItem.bytesReceived
-      ) {
+      if (MissingStreamDataDetector.isAllBytesReceivedDidntChange(inboundItem.bytesReceived, prevInboundItems)) {
         const hasIssue = this.markIssue(trackId);
 
         if (!hasIssue) {
@@ -127,9 +121,27 @@ export default class MissingStreamDataDetector extends BaseIssueDetector {
     return issues;
   }
 
-  private static mapStatsByTrackId(items: CommonParsedInboundStreamStats[]) {
-    return new Map<string, CommonParsedInboundStreamStats>(items
-      .map((item) => [item.track.trackIdentifier, item] as const));
+  private static mapStatsByTrackId(items: CommonParsedInboundStreamStats[][]): Map<string, CommonParsedInboundStreamStats[]> {
+    const statsById = new Map<string, CommonParsedInboundStreamStats[]>();
+    items.forEach((inboundItems) => {
+      inboundItems.forEach((inbountItem) => {
+        const accumulatedItems = statsById.get(inbountItem.track.trackIdentifier) || [];
+        accumulatedItems.push(inbountItem);
+        statsById.set(inbountItem.track.trackIdentifier, accumulatedItems);
+      });
+    })
+
+    return statsById;
+  }
+
+  private static isAllBytesReceivedDidntChange(bytesReceived: number, inboundItems: CommonParsedInboundStreamStats[]): boolean {
+    for (const inboundItem of inboundItems) {
+      if (inboundItem.bytesReceived !== bytesReceived) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   private markIssue(trackId: string): boolean {
