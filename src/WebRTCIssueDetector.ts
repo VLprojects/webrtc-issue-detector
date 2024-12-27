@@ -27,6 +27,7 @@ import {
 } from './detectors';
 import { CompositeRTCStatsParser, RTCStatsParser } from './parser';
 import createLogger from './utils/logger';
+import MissingStreamDataDetector from './detectors/MissingStreamDataDetector';
 
 class WebRTCIssueDetector {
   readonly eventEmitter: WebRTCIssueEmitter;
@@ -67,6 +68,7 @@ class WebRTCIssueDetector {
       new AvailableOutgoingBitrateIssueDetector(),
       new UnknownVideoDecoderImplementationDetector(),
       new FrozenVideoTrackDetector(),
+      new MissingStreamDataDetector(),
     ];
 
     this.networkScoresCalculator = params.networkScoresCalculator ?? new DefaultNetworkScoresCalculator();
