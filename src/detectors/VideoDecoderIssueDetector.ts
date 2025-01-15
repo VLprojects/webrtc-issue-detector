@@ -2,8 +2,10 @@ import {
   IssueDetectorResult,
   IssueReason,
   IssueType,
-  WebRTCStatsParsed,
+  MosQuality,
+  WebRTCStatsParsedWithNetworkScores,
 } from '../types';
+import { isSvcSpatialLayerChanged } from '../utils/video';
 import BaseIssueDetector, { BaseIssueDetectorParams } from './BaseIssueDetector';
 
 interface VideoDecoderIssueDetectorParams extends BaseIssueDetectorParams {
@@ -22,14 +24,25 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
     this.#affectedStreamsPercentThreshold = params.affectedStreamsPercentThreshold ?? 50;
   }
 
-  performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
-    const { connection: { id: connectionId } } = data;
-    const issues = this.processData(data);
-    this.setLastProcessedStats(connectionId, data);
-    return issues;
+  performDetection(data: WebRTCStatsParsedWithNetworkScores): IssueDetectorResult {
+    const allHistoricalStats = [
+      ...this.getAllLastProcessedStats(data.connection.id),
+      data,
+    ];
+
+    const isBadNetworkHappened = allHistoricalStats
+      .find((stat) => stat.networkScores.inbound !== undefined && stat.networkScores.inbound <= MosQuality.BAD);
+
+    if (isBadNetworkHappened) {
+      // do not execute detection on historical stats based on bad network quality
+      // to avoid false positives
+      return [];
+    }
+
+    return this.processData(data);
   }
 
-  private processData(data: WebRTCStatsParsed): IssueDetectorResult {
+  private processData(data: WebRTCStatsParsedWithNetworkScores): IssueDetectorResult {
     const issues: IssueDetectorResult = [];
 
     const allProcessedStats = [
@@ -40,9 +53,13 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
     const throtthedStreams = data.video.inbound
       .map((incomeVideoStream): { ssrc: number, allDecodeTimePerFrame: number[], volatility: number } | undefined => {
         const allDecodeTimePerFrame: number[] = [];
+        const isSpatialLayerChanged = isSvcSpatialLayerChanged(incomeVideoStream.ssrc, allProcessedStats);
+        if (isSpatialLayerChanged) {
+          return undefined;
+        }
 
-        // We need at least 4 elements to have enough representation
-        if (allProcessedStats.length < 4) {
+        // We need at least 5 elements to have enough representation
+        if (allProcessedStats.length < 5) {
           return undefined;
         }
 
@@ -53,7 +70,7 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
           let decodeTimePerFrame = 0;
 
           const videoStreamStats = allProcessedStats[i].video.inbound.find(
-            (stream) => stream.id === incomeVideoStream.id,
+            (stream) => stream.ssrc === incomeVideoStream.ssrc,
           );
 
           if (!videoStreamStats) {
@@ -61,7 +78,7 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
           }
 
           const prevVideoStreamStats = allProcessedStats[i - 1].video.inbound.find(
-            (stream) => stream.id === incomeVideoStream.id,
+            (stream) => stream.ssrc === incomeVideoStream.ssrc,
           );
 
           if (prevVideoStreamStats) {
@@ -86,15 +103,7 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
           (decodeTimePerFrame, index) => index === 0 || decodeTimePerFrame > allDecodeTimePerFrame[index - 1],
         );
 
-        console.log({
-          allDecodeTimePerFrame,
-          isDecodeTimePerFrameIncrease,
-          mean,
-          volatility,
-        });
-
         if (volatility > this.#volatilityThreshold && isDecodeTimePerFrameIncrease) {
-          console.log('CPU THROTTLE SUSPECTED FOR STREAM', incomeVideoStream.ssrc);
           return { ssrc: incomeVideoStream.ssrc, allDecodeTimePerFrame, volatility };
         }
 
@@ -104,7 +113,6 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
 
     const affectedStreamsPercent = throtthedStreams.length / (data.video.inbound.length / 100);
     if (affectedStreamsPercent > this.#affectedStreamsPercentThreshold) {
-      console.log('CPU THROTTLE DETECTED');
       issues.push({
         type: IssueType.CPU,
         reason: IssueReason.DecoderCPUThrottling,
@@ -113,6 +121,9 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
           throtthedStreams,
         },
       });
+
+      // clear all processed stats for this connection to avoid duplicate issues
+      this.deleteLastProcessedStats(data.connection.id);
     }
 
     return issues;

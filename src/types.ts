@@ -11,7 +11,7 @@ export interface WIDWindow {
 export type IssueDetectorResult = IssuePayload[];
 
 export interface IssueDetector {
-  detect(data: WebRTCStatsParsed): IssueDetectorResult;
+  detect(data: WebRTCStatsParsed, networkScores: NetworkScores): IssueDetectorResult;
 }
 
 export interface INetworkScoresCalculator {
@@ -251,6 +251,8 @@ export type ParsedInboundVideoStreamStats = {
   totalDecodeTime: number,
   totalInterFrameDelay: number,
   totalSquaredInterFrameDelay: number,
+  freezeCount: number,
+  totalFreezesDuration: number,
   track: {
     detached: boolean,
     ended: boolean,
@@ -433,3 +435,13 @@ export interface Logger {
   warn: (msg: any, ...meta: any[]) => void;
   error: (msg: any, ...meta: any[]) => void;
 }
+
+export enum MosQuality {
+  BAD = 2.1,
+  POOR = 2.6,
+  FAIR = 3.1,
+  GOOD = 3.8,
+  EXCELLENT = 4.3,
+}
+
+export type WebRTCStatsParsedWithNetworkScores = WebRTCStatsParsed & { networkScores: NetworkScores };

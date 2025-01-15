@@ -7,6 +7,7 @@ import {
   IssueDetector,
   IssuePayload,
   Logger,
+  NetworkScores,
   StatsReportItem,
   WebRTCIssueDetectorConstructorParams,
   WebRTCStatsParsed,
@@ -88,11 +89,8 @@ class WebRTCIssueDetector {
     }
 
     this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORT_READY_EVENT, (report: StatsReportItem) => {
-      this.detectIssues({
-        data: report.stats,
-      });
-
-      this.calculateNetworkScores(report.stats);
+      const networkScores = this.calculateNetworkScores(report.stats);
+      this.detectIssues({ data: report.stats }, networkScores);
     });
 
     this.statsReporter.on(PeriodicWebRTCStatsReporter.STATS_REPORTS_PARSED, (data: {
@@ -161,16 +159,19 @@ class WebRTCIssueDetector {
     this.eventEmitter.emit(EventType.Issue, issues);
   }
 
-  private detectIssues({ data }: DetectIssuesPayload): void {
-    const issues = this.detectors.reduce<IssuePayload[]>((acc, detector) => [...acc, ...detector.detect(data)], []);
+  private detectIssues({ data }: DetectIssuesPayload, networkScores: NetworkScores): void {
+    const issues = this.detectors
+      .reduce<IssuePayload[]>((acc, detector) => [...acc, ...detector.detect(data, networkScores)], []);
+
     if (issues.length > 0) {
       this.emitIssues(issues);
     }
   }
 
-  private calculateNetworkScores(data: WebRTCStatsParsed): void {
+  private calculateNetworkScores(data: WebRTCStatsParsed): NetworkScores {
     const networkScores = this.networkScoresCalculator.calculate(data);
     this.eventEmitter.emit(EventType.NetworkScoresUpdated, networkScores);
+    return networkScores;
   }
 
   private wrapRTCPeerConnection(): void {
