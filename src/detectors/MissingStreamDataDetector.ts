@@ -9,7 +9,7 @@ import {
 import BaseIssueDetector from './BaseIssueDetector';
 
 interface MissingStreamDetectorParams {
-  timeoutMs?: number; // delay to report the issue no more often then once specified value
+  timeoutMs?: number; // delay to report the issue no more often then once per specified timeout
   steps?: number; // number of last stats to check
 }
 
