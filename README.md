@@ -51,7 +51,6 @@ By default, WebRTCIssueDetector can be created with minimum of mandatory constru
 ```typescript
 import WebRTCIssueDetector, {
   QualityLimitationsIssueDetector,
-  FramesEncodedSentIssueDetector,
   InboundNetworkIssueDetector,
   OutboundNetworkIssueDetector,
   NetworkMediaSyncIssueDetector,
@@ -68,7 +67,6 @@ const widWithDefaultConstructorArgs = new WebRTCIssueDetector();
 const widWithCustomConstructorArgs = new WebRTCIssueDetector({
   detectors: [ // you are free to change the detectors list according to your needs
     new QualityLimitationsIssueDetector(),
-    new FramesEncodedSentIssueDetector(),
     new InboundNetworkIssueDetector(),
     new OutboundNetworkIssueDetector(),
     new NetworkMediaSyncIssueDetector(),
@@ -118,21 +116,6 @@ const exampleIssue = {
         { ssrc: 123, allDecodeTimePerFrame: [1.2, 1.6, 1.9, 2.4, 2.9], volatility: 1.7 },
       ]
     },
-}
-```
-
-### FramesEncodedSentIssueDetector
-Detects issues with outbound network throughput.
-```js
-const exampleIssue = {
-    type: 'network',
-    reason: 'outbound-network-throughput',
-    statsSample: {
-      deltaFramesSent: 900,
-      deltaFramesEncoded: 1000,
-      missedFramesPct: 10,
-    },
-    ssrc: 1234,
 }
 ```
 
