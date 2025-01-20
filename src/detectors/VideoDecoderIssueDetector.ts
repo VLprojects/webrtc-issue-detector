@@ -106,7 +106,6 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
           (decodeTimePerFrame, index) => index === 0 || decodeTimePerFrame > allDecodeTimePerFrame[index - 1],
         );
 
-
         // Calculate volatility fps
         const meanFps = allFpss.reduce((acc, val) => acc + val, 0) / allDecodeTimePerFrame.length;
         const squaredDiffsFps = allFpss.map((val) => (val - meanFps) ** 2);
