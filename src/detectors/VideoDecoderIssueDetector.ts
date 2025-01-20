@@ -53,6 +53,8 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
     const throtthedStreams = data.video.inbound
       .map((incomeVideoStream): { ssrc: number, allDecodeTimePerFrame: number[], volatility: number } | undefined => {
         const allDecodeTimePerFrame: number[] = [];
+        const allFpss: number[] = [];
+
         const isSpatialLayerChanged = isSvcSpatialLayerChanged(incomeVideoStream.ssrc, allProcessedStats);
         if (isSpatialLayerChanged) {
           return undefined;
@@ -91,9 +93,10 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
           }
 
           allDecodeTimePerFrame.push(decodeTimePerFrame);
+          allFpss.push(videoStreamStats.framesPerSecond);
         }
 
-        // Calculate volatility
+        // Calculate volatility decode time
         const mean = allDecodeTimePerFrame.reduce((acc, val) => acc + val, 0) / allDecodeTimePerFrame.length;
         const squaredDiffs = allDecodeTimePerFrame.map((val) => (val - mean) ** 2);
         const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / squaredDiffs.length;
@@ -103,10 +106,16 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
           (decodeTimePerFrame, index) => index === 0 || decodeTimePerFrame > allDecodeTimePerFrame[index - 1],
         );
 
+
+        // Calculate volatility fps
+        const meanFps = allFpss.reduce((acc, val) => acc + val, 0) / allDecodeTimePerFrame.length;
+        const squaredDiffsFps = allFpss.map((val) => (val - meanFps) ** 2);
+        const varianceFps = squaredDiffsFps.reduce((acc, val) => acc + val, 0) / squaredDiffsFps.length;
+        const volatilityFps = Math.sqrt(varianceFps);
+
         console.log('THROTTLE', {
-          isDecodeTimePerFrameIncrease,
-          volatility,
-          mean,
+          volatilityFps,
+          allFpss,
         });
 
         if (volatility > this.#volatilityThreshold && isDecodeTimePerFrameIncrease) {
