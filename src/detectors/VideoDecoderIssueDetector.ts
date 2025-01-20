@@ -103,7 +103,14 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
           (decodeTimePerFrame, index) => index === 0 || decodeTimePerFrame > allDecodeTimePerFrame[index - 1],
         );
 
+        console.log('THROTTLE', {
+          isDecodeTimePerFrameIncrease,
+          volatility,
+          mean,
+        });
+
         if (volatility > this.#volatilityThreshold && isDecodeTimePerFrameIncrease) {
+          console.log('THROTTLE DETECTED');
           return { ssrc: incomeVideoStream.ssrc, allDecodeTimePerFrame, volatility };
         }
 
