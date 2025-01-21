@@ -20,7 +20,7 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
 
   constructor(params: VideoDecoderIssueDetectorParams = {}) {
     super(params);
-    this.#volatilityThreshold = params.volatilityThreshold ?? 1.5;
+    this.#volatilityThreshold = params.volatilityThreshold ?? 8;
     this.#affectedStreamsPercentThreshold = params.affectedStreamsPercentThreshold ?? 50;
   }
 
@@ -51,9 +51,8 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
     ];
 
     const throtthedStreams = data.video.inbound
-      .map((incomeVideoStream): { ssrc: number, allDecodeTimePerFrame: number[], volatility: number } | undefined => {
-        const allDecodeTimePerFrame: number[] = [];
-        const allFpss: number[] = [];
+      .map((incomeVideoStream): { ssrc: number, allFps: number[], volatility: number } | undefined => {
+        const allFps: number[] = [];
 
         const isSpatialLayerChanged = isSvcSpatialLayerChanged(incomeVideoStream.ssrc, allProcessedStats);
         if (isSpatialLayerChanged) {
@@ -65,61 +64,20 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
           return undefined;
         }
 
-        // exclude first element to calculate accurate delta
-        for (let i = 1; i < allProcessedStats.length; i += 1) {
-          let deltaFramesDecoded = 0;
-          let deltaTotalDecodeTime = 0;
-          let decodeTimePerFrame = 0;
-
-          const videoStreamStats = allProcessedStats[i].video.inbound.find(
-            (stream) => stream.ssrc === incomeVideoStream.ssrc,
-          );
-
-          if (!videoStreamStats) {
-            continue;
-          }
-
-          const prevVideoStreamStats = allProcessedStats[i - 1].video.inbound.find(
-            (stream) => stream.ssrc === incomeVideoStream.ssrc,
-          );
-
-          if (prevVideoStreamStats) {
-            deltaFramesDecoded = videoStreamStats.framesDecoded - prevVideoStreamStats.framesDecoded;
-            deltaTotalDecodeTime = videoStreamStats.totalDecodeTime - prevVideoStreamStats.totalDecodeTime;
-          }
-
-          if (deltaTotalDecodeTime > 0 && deltaFramesDecoded > 0) {
-            decodeTimePerFrame = (deltaTotalDecodeTime * 1000) / deltaFramesDecoded;
-          }
-
-          allDecodeTimePerFrame.push(decodeTimePerFrame);
-          allFpss.push(videoStreamStats.framesPerSecond);
-        }
-
-        // Calculate volatility decode time
-        const mean = allDecodeTimePerFrame.reduce((acc, val) => acc + val, 0) / allDecodeTimePerFrame.length;
-        const squaredDiffs = allDecodeTimePerFrame.map((val) => (val - mean) ** 2);
-        const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / squaredDiffs.length;
-        const volatility = Math.sqrt(variance);
-
-        const isDecodeTimePerFrameIncrease = allDecodeTimePerFrame.every(
-          (decodeTimePerFrame, index) => index === 0 || decodeTimePerFrame > allDecodeTimePerFrame[index - 1],
-        );
-
         // Calculate volatility fps
-        const meanFps = allFpss.reduce((acc, val) => acc + val, 0) / allDecodeTimePerFrame.length;
-        const squaredDiffsFps = allFpss.map((val) => (val - meanFps) ** 2);
-        const varianceFps = squaredDiffsFps.reduce((acc, val) => acc + val, 0) / squaredDiffsFps.length;
-        const volatilityFps = Math.sqrt(varianceFps);
+        const meanFps = allFps.reduce((acc, val) => acc + val, 0) / allFps.length;
+        const meanAbsoluteDeviationFps = allFps
+          .reduce((acc, val) => acc + Math.abs(val - meanFps), 0) / allFps.length;
+        const volatility = (meanAbsoluteDeviationFps * 100) / meanFps;
 
         console.log('THROTTLE', {
-          volatilityFps,
-          allFpss,
+          volatility,
+          allFps,
         });
 
-        if (volatility > this.#volatilityThreshold && isDecodeTimePerFrameIncrease) {
-          console.log('THROTTLE DETECTED');
-          return { ssrc: incomeVideoStream.ssrc, allDecodeTimePerFrame, volatility };
+        if (volatility > this.#volatilityThreshold) {
+          console.log('THROTTLE DETECTED on Single stream');
+          return { ssrc: incomeVideoStream.ssrc, allFps, volatility };
         }
 
         return undefined;
@@ -128,6 +86,7 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
 
     const affectedStreamsPercent = throtthedStreams.length / (data.video.inbound.length / 100);
     if (affectedStreamsPercent > this.#affectedStreamsPercentThreshold) {
+      console.log('THROTTLE DETECTED !!!!');
       issues.push({
         type: IssueType.CPU,
         reason: IssueReason.DecoderCPUThrottling,
