@@ -52,8 +52,6 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
 
     const throtthedStreams = data.video.inbound
       .map((incomeVideoStream): { ssrc: number, allFps: number[], volatility: number } | undefined => {
-        const allFps: number[] = [];
-
         const isSpatialLayerChanged = isSvcSpatialLayerChanged(incomeVideoStream.ssrc, allProcessedStats);
         if (isSpatialLayerChanged) {
           return undefined;
@@ -62,6 +60,19 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
         // We need at least 5 elements to have enough representation
         if (allProcessedStats.length < 5) {
           return undefined;
+        }
+
+        const allFps: number[] = [];
+
+        // exclude first element to calculate accurate delta
+        for (let i = 1; i < allProcessedStats.length; i += 1) {
+          const videoStreamStats = allProcessedStats[i].video.inbound.find(
+            (stream) => stream.ssrc === incomeVideoStream.ssrc,
+          );
+
+          if (videoStreamStats) {
+            allFps.push(videoStreamStats.framesPerSecond);
+          }
         }
 
         // Calculate volatility fps
@@ -85,6 +96,7 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
       .filter((throttledVideoStream) => Boolean(throttledVideoStream));
 
     const affectedStreamsPercent = throtthedStreams.length / (data.video.inbound.length / 100);
+    console.log('THROTTLE AFFECTION', { affectedStreamsPercent });
     if (affectedStreamsPercent > this.#affectedStreamsPercentThreshold) {
       console.log('THROTTLE DETECTED !!!!');
       issues.push({
