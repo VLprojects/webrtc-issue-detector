@@ -21,7 +21,7 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
   constructor(params: VideoDecoderIssueDetectorParams = {}) {
     super(params);
     this.#volatilityThreshold = params.volatilityThreshold ?? 8;
-    this.#affectedStreamsPercentThreshold = params.affectedStreamsPercentThreshold ?? 50;
+    this.#affectedStreamsPercentThreshold = params.affectedStreamsPercentThreshold ?? 30;
   }
 
   performDetection(data: WebRTCStatsParsedWithNetworkScores): IssueDetectorResult {
@@ -65,12 +65,12 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
         const allFps: number[] = [];
 
         // exclude first element to calculate accurate delta
-        for (let i = 1; i < allProcessedStats.length; i += 1) {
+        for (let i = 0; i < allProcessedStats.length - 1; i += 1) {
           const videoStreamStats = allProcessedStats[i].video.inbound.find(
             (stream) => stream.ssrc === incomeVideoStream.ssrc,
           );
 
-          if (videoStreamStats) {
+          if (videoStreamStats?.framesPerSecond !== undefined) {
             allFps.push(videoStreamStats.framesPerSecond);
           }
         }
@@ -82,18 +82,23 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
         const volatility = (meanAbsoluteDeviationFps * 100) / meanFps;
 
         console.log('THROTTLE', {
+          ssrc: incomeVideoStream.ssrc,
           volatility,
           allFps,
         });
 
         if (volatility > this.#volatilityThreshold) {
-          console.log('THROTTLE DETECTED on Single stream');
+          console.log('THROTTLE DETECTED on Single stream', incomeVideoStream.ssrc);
           return { ssrc: incomeVideoStream.ssrc, allFps, volatility };
         }
 
         return undefined;
       })
       .filter((throttledVideoStream) => Boolean(throttledVideoStream));
+
+    if (throtthedStreams.length === 0) {
+      return issues;
+    }
 
     const affectedStreamsPercent = throtthedStreams.length / (data.video.inbound.length / 100);
     console.log('THROTTLE AFFECTION', { affectedStreamsPercent });
