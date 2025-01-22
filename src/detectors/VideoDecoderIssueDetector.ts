@@ -1,3 +1,4 @@
+import { calculateVolatility } from '../helpers/calc';
 import {
   IssueDetectorResult,
   IssueReason,
@@ -14,14 +15,14 @@ interface VideoDecoderIssueDetectorParams extends BaseIssueDetectorParams {
 }
 
 class VideoDecoderIssueDetector extends BaseIssueDetector {
-  #volatilityThreshold: number;
+  readonly #volatilityThreshold: number;
 
-  #affectedStreamsPercentThreshold: number;
+  readonly #affectedStreamsPercentThreshold: number;
 
   constructor(params: VideoDecoderIssueDetectorParams = {}) {
     super(params);
-    this.#volatilityThreshold = params.volatilityThreshold ?? 1.5;
-    this.#affectedStreamsPercentThreshold = params.affectedStreamsPercentThreshold ?? 50;
+    this.#volatilityThreshold = params.volatilityThreshold ?? 8;
+    this.#affectedStreamsPercentThreshold = params.affectedStreamsPercentThreshold ?? 30;
   }
 
   performDetection(data: WebRTCStatsParsedWithNetworkScores): IssueDetectorResult {
@@ -51,65 +52,45 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
     ];
 
     const throtthedStreams = data.video.inbound
-      .map((incomeVideoStream): { ssrc: number, allDecodeTimePerFrame: number[], volatility: number } | undefined => {
-        const allDecodeTimePerFrame: number[] = [];
+      .map((incomeVideoStream): { ssrc: number, allFps: number[], volatility: number } | undefined => {
+        // At least 5 elements needed to have enough representation
+        if (allProcessedStats.length < 5) {
+          return undefined;
+        }
+
         const isSpatialLayerChanged = isSvcSpatialLayerChanged(incomeVideoStream.ssrc, allProcessedStats);
         if (isSpatialLayerChanged) {
           return undefined;
         }
 
-        // We need at least 5 elements to have enough representation
-        if (allProcessedStats.length < 5) {
-          return undefined;
-        }
-
-        // exclude first element to calculate accurate delta
-        for (let i = 1; i < allProcessedStats.length; i += 1) {
-          let deltaFramesDecoded = 0;
-          let deltaTotalDecodeTime = 0;
-          let decodeTimePerFrame = 0;
-
+        const allFps: number[] = [];
+        for (let i = 0; i < allProcessedStats.length - 1; i += 1) {
           const videoStreamStats = allProcessedStats[i].video.inbound.find(
             (stream) => stream.ssrc === incomeVideoStream.ssrc,
           );
 
-          if (!videoStreamStats) {
-            continue;
+          if (videoStreamStats?.framesPerSecond !== undefined) {
+            allFps.push(videoStreamStats.framesPerSecond);
           }
-
-          const prevVideoStreamStats = allProcessedStats[i - 1].video.inbound.find(
-            (stream) => stream.ssrc === incomeVideoStream.ssrc,
-          );
-
-          if (prevVideoStreamStats) {
-            deltaFramesDecoded = videoStreamStats.framesDecoded - prevVideoStreamStats.framesDecoded;
-            deltaTotalDecodeTime = videoStreamStats.totalDecodeTime - prevVideoStreamStats.totalDecodeTime;
-          }
-
-          if (deltaTotalDecodeTime > 0 && deltaFramesDecoded > 0) {
-            decodeTimePerFrame = (deltaTotalDecodeTime * 1000) / deltaFramesDecoded;
-          }
-
-          allDecodeTimePerFrame.push(decodeTimePerFrame);
         }
 
-        // Calculate volatility
-        const mean = allDecodeTimePerFrame.reduce((acc, val) => acc + val, 0) / allDecodeTimePerFrame.length;
-        const squaredDiffs = allDecodeTimePerFrame.map((val) => (val - mean) ** 2);
-        const variance = squaredDiffs.reduce((acc, val) => acc + val, 0) / squaredDiffs.length;
-        const volatility = Math.sqrt(variance);
+        if (allFps.length === 0) {
+          return undefined;
+        }
 
-        const isDecodeTimePerFrameIncrease = allDecodeTimePerFrame.every(
-          (decodeTimePerFrame, index) => index === 0 || decodeTimePerFrame > allDecodeTimePerFrame[index - 1],
-        );
+        const volatility = calculateVolatility(allFps);
 
-        if (volatility > this.#volatilityThreshold && isDecodeTimePerFrameIncrease) {
-          return { ssrc: incomeVideoStream.ssrc, allDecodeTimePerFrame, volatility };
+        if (volatility > this.#volatilityThreshold) {
+          return { ssrc: incomeVideoStream.ssrc, allFps, volatility };
         }
 
         return undefined;
       })
       .filter((throttledVideoStream) => Boolean(throttledVideoStream));
+
+    if (throtthedStreams.length === 0) {
+      return issues;
+    }
 
     const affectedStreamsPercent = throtthedStreams.length / (data.video.inbound.length / 100);
     if (affectedStreamsPercent > this.#affectedStreamsPercentThreshold) {

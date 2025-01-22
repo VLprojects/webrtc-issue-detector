@@ -14,16 +14,16 @@ interface FrozenVideoTrackDetectorParams {
   frozenDurationThresholdPct?: number;
 }
 
-interface FrozenStream {
+interface FrozenStreamStatsSample {
   ssrc: number;
   avgFreezeDurationMs: number;
   frozenDurationPct: number;
 }
 
 class FrozenVideoTrackDetector extends BaseIssueDetector {
-  #avgFreezeDurationThresholdMs: number;
+  readonly #avgFreezeDurationThresholdMs: number;
 
-  #frozenDurationThresholdPct: number;
+  readonly #frozenDurationThresholdPct: number;
 
   constructor(params: FrozenVideoTrackDetectorParams = {}) {
     super();
@@ -50,7 +50,7 @@ class FrozenVideoTrackDetector extends BaseIssueDetector {
     }
 
     const frozenStreams = data.video.inbound
-      .map((videoStream): FrozenStream | undefined => {
+      .map((videoStream): FrozenStreamStatsSample | undefined => {
         const prevStat = allLastProcessedStats[allLastProcessedStats.length - 1]
           .video.inbound.find((stream) => stream.ssrc === videoStream.ssrc);
 
@@ -91,7 +91,7 @@ class FrozenVideoTrackDetector extends BaseIssueDetector {
 
         return undefined;
       })
-      .filter((stream) => stream !== undefined) as FrozenStream[];
+      .filter((stream) => stream !== undefined) as FrozenStreamStatsSample[];
 
     if (frozenStreams.length > 0) {
       issues.push({
