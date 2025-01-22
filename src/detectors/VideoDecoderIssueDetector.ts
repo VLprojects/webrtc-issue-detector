@@ -54,11 +54,13 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
       .map((incomeVideoStream): { ssrc: number, allFps: number[], volatility: number } | undefined => {
         const isSpatialLayerChanged = isSvcSpatialLayerChanged(incomeVideoStream.ssrc, allProcessedStats);
         if (isSpatialLayerChanged) {
+          console.log('THROTTLE SKIPPED due to SVC layer change', incomeVideoStream.ssrc);
           return undefined;
         }
 
         // We need at least 5 elements to have enough representation
         if (allProcessedStats.length < 5) {
+          console.log('THROTTLE SKIPPED due not enought data', incomeVideoStream.ssrc, allProcessedStats.length);
           return undefined;
         }
 
