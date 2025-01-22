@@ -11,7 +11,7 @@ export interface WIDWindow {
 export type IssueDetectorResult = IssuePayload[];
 
 export interface IssueDetector {
-  detect(data: WebRTCStatsParsed, networkScores: NetworkScores): IssueDetectorResult;
+  detect(data: WebRTCStatsParsed, networkScores?: NetworkScores): IssueDetectorResult;
 }
 
 export interface INetworkScoresCalculator {
