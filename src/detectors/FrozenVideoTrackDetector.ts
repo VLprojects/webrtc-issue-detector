@@ -12,6 +12,7 @@ import BaseIssueDetector from './BaseIssueDetector';
 interface FrozenVideoTrackDetectorParams {
   avgFreezeDurationThresholdMs?: number;
   frozenDurationThresholdPct?: number;
+  minMosQuality?: number;
 }
 
 interface FrozenStreamStatsSample {
@@ -25,15 +26,18 @@ class FrozenVideoTrackDetector extends BaseIssueDetector {
 
   readonly #frozenDurationThresholdPct: number;
 
+  readonly #minMosQuality: MosQuality;
+
   constructor(params: FrozenVideoTrackDetectorParams = {}) {
     super();
     this.#avgFreezeDurationThresholdMs = params.avgFreezeDurationThresholdMs ?? 1_000;
     this.#frozenDurationThresholdPct = params.frozenDurationThresholdPct ?? 30;
+    this.#minMosQuality = params.minMosQuality ?? MosQuality.BAD;
   }
 
   performDetection(data: WebRTCStatsParsedWithNetworkScores): IssueDetectorResult {
     const inboundScore = data.networkScores.inbound;
-    if (inboundScore !== undefined && inboundScore <= MosQuality.BAD) {
+    if (inboundScore !== undefined && inboundScore <= this.#minMosQuality) {
       // do not execute detection on stats based on poor network quality
       // to avoid false positives
       return [];

@@ -12,6 +12,7 @@ import BaseIssueDetector, { BaseIssueDetectorParams } from './BaseIssueDetector'
 interface VideoDecoderIssueDetectorParams extends BaseIssueDetectorParams {
   volatilityThreshold?: number;
   affectedStreamsPercentThreshold?: number;
+  minMosQuality?: number;
 }
 
 class VideoDecoderIssueDetector extends BaseIssueDetector {
@@ -19,10 +20,13 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
 
   readonly #affectedStreamsPercentThreshold: number;
 
+  readonly #minMosQuality: MosQuality;
+
   constructor(params: VideoDecoderIssueDetectorParams = {}) {
     super(params);
     this.#volatilityThreshold = params.volatilityThreshold ?? 8;
     this.#affectedStreamsPercentThreshold = params.affectedStreamsPercentThreshold ?? 30;
+    this.#minMosQuality = params.minMosQuality ?? MosQuality.BAD;
   }
 
   performDetection(data: WebRTCStatsParsedWithNetworkScores): IssueDetectorResult {
@@ -32,7 +36,7 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
     ];
 
     const isBadNetworkHappened = allHistoricalStats
-      .find((stat) => stat.networkScores.inbound !== undefined && stat.networkScores.inbound <= MosQuality.BAD);
+      .find((stat) => stat.networkScores.inbound !== undefined && stat.networkScores.inbound <= this.#minMosQuality);
 
     if (isBadNetworkHappened) {
       // do not execute detection on historical stats based on bad network quality
