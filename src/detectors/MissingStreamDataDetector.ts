@@ -63,7 +63,7 @@ export default class MissingStreamDataDetector extends BaseIssueDetector {
     unvisitedTrackIds.forEach((trackId) => {
       const lastMarkedAt = this.#lastMarkedAt.get(trackId);
       if (lastMarkedAt && Date.now() - lastMarkedAt > this.#timeoutMs) {
-        this.removeMarkIssue(trackId);
+        this.removeMarkedIssue(trackId);
       }
     });
 
@@ -93,29 +93,27 @@ export default class MissingStreamDataDetector extends BaseIssueDetector {
         return;
       }
 
-      if (MissingStreamDataDetector.isAllBytesReceivedDidntChange(inboundItem.bytesReceived, prevInboundItems)) {
-        const hasIssue = this.markIssue(trackId);
-
-        if (!hasIssue) {
-          return;
-        }
-
-        const statsSample = {
-          bytesReceivedDelta: 0,
-          bytesReceived: inboundItem.bytesReceived,
-          trackDetached: Boolean(inboundItem.track.detached),
-          trackEnded: Boolean(inboundItem.track.ended),
-        };
-
-        issues.push({
-          type,
-          reason,
-          statsSample,
-          trackIdentifier: trackId,
-        });
-      } else {
-        this.removeMarkIssue(trackId);
+      if (!MissingStreamDataDetector.isAllBytesReceivedDidntChange(inboundItem.bytesReceived, prevInboundItems)) {
+        this.removeMarkedIssue(trackId);
+        return;
       }
+
+      const issueMarked = this.markIssue(trackId);
+
+      if (!issueMarked) {
+        return;
+      }
+
+      const statsSample = {
+        bytesReceived: inboundItem.bytesReceived,
+      };
+
+      issues.push({
+        type,
+        reason,
+        statsSample,
+        trackIdentifier: trackId,
+      });
     });
 
     return issues;
@@ -161,7 +159,7 @@ export default class MissingStreamDataDetector extends BaseIssueDetector {
     return false;
   }
 
-  private removeMarkIssue(trackId: string): void {
+  private removeMarkedIssue(trackId: string): void {
     this.#lastMarkedAt.delete(trackId);
   }
 }
