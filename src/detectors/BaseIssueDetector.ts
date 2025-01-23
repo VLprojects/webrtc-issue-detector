@@ -1,4 +1,10 @@
-import { IssueDetector, IssueDetectorResult, WebRTCStatsParsed } from '../types';
+import {
+  IssueDetector,
+  IssueDetectorResult,
+  NetworkScores,
+  WebRTCStatsParsed,
+  WebRTCStatsParsedWithNetworkScores,
+} from '../types';
 import { scheduleTask } from '../utils/tasks';
 import { CLEANUP_PREV_STATS_TTL_MS, MAX_PARSED_STATS_STORAGE_SIZE } from '../utils/constants';
 
@@ -13,7 +19,7 @@ export interface BaseIssueDetectorParams {
 }
 
 abstract class BaseIssueDetector implements IssueDetector {
-  readonly #parsedStatsStorage: Map<string, WebRTCStatsParsed[]> = new Map();
+  readonly #parsedStatsStorage: Map<string, WebRTCStatsParsedWithNetworkScores[]> = new Map();
 
   readonly #statsCleanupDelayMs: number;
 
@@ -24,11 +30,19 @@ abstract class BaseIssueDetector implements IssueDetector {
     this.#maxParsedStatsStorageSize = params.maxParsedStatsStorageSize ?? MAX_PARSED_STATS_STORAGE_SIZE;
   }
 
-  abstract performDetection(data: WebRTCStatsParsed): IssueDetectorResult;
+  abstract performDetection(data: WebRTCStatsParsedWithNetworkScores): IssueDetectorResult;
 
-  detect(data: WebRTCStatsParsed): IssueDetectorResult {
-    const result = this.performDetection(data);
+  detect(data: WebRTCStatsParsed, networkScores?: NetworkScores): IssueDetectorResult {
+    const parsedStatsWithNetworkScores = {
+      ...data,
+      networkScores: {
+        ...networkScores,
+        statsSamples: networkScores?.statsSamples || {},
+      },
+    };
+    const result = this.performDetection(parsedStatsWithNetworkScores);
 
+    this.setLastProcessedStats(data.connection.id, parsedStatsWithNetworkScores);
     this.performPrevStatsCleanup({
       connectionId: data.connection.id,
     });
@@ -56,7 +70,7 @@ abstract class BaseIssueDetector implements IssueDetector {
     });
   }
 
-  protected setLastProcessedStats(connectionId: string, parsedStats: WebRTCStatsParsed): void {
+  protected setLastProcessedStats(connectionId: string, parsedStats: WebRTCStatsParsedWithNetworkScores): void {
     if (!connectionId || parsedStats.connection.id !== connectionId) {
       return;
     }
@@ -71,16 +85,16 @@ abstract class BaseIssueDetector implements IssueDetector {
     this.#parsedStatsStorage.set(connectionId, connectionStats);
   }
 
-  protected getLastProcessedStats(connectionId: string): WebRTCStatsParsed | undefined {
+  protected getLastProcessedStats(connectionId: string): WebRTCStatsParsedWithNetworkScores | undefined {
     const connectionStats = this.#parsedStatsStorage.get(connectionId);
     return connectionStats?.[connectionStats.length - 1];
   }
 
-  protected getAllLastProcessedStats(connectionId: string): WebRTCStatsParsed[] {
+  protected getAllLastProcessedStats(connectionId: string): WebRTCStatsParsedWithNetworkScores[] {
     return this.#parsedStatsStorage.get(connectionId) ?? [];
   }
 
-  private deleteLastProcessedStats(connectionId: string): void {
+  protected deleteLastProcessedStats(connectionId: string): void {
     this.#parsedStatsStorage.delete(connectionId);
   }
 }

@@ -8,10 +8,7 @@ import BaseIssueDetector from './BaseIssueDetector';
 
 class QualityLimitationsIssueDetector extends BaseIssueDetector {
   performDetection(data: WebRTCStatsParsed): IssueDetectorResult {
-    const { connection: { id: connectionId } } = data;
-    const issues = this.processData(data);
-    this.setLastProcessedStats(connectionId, data);
-    return issues;
+    return this.processData(data);
   }
 
   private processData(data: WebRTCStatsParsed): IssueDetectorResult {

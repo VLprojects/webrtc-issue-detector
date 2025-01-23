@@ -51,14 +51,13 @@ By default, WebRTCIssueDetector can be created with minimum of mandatory constru
 ```typescript
 import WebRTCIssueDetector, {
   QualityLimitationsIssueDetector,
-  FramesDroppedIssueDetector,
-  FramesEncodedSentIssueDetector,
   InboundNetworkIssueDetector,
   OutboundNetworkIssueDetector,
   NetworkMediaSyncIssueDetector,
   AvailableOutgoingBitrateIssueDetector,
   UnknownVideoDecoderImplementationDetector,
   FrozenVideoTrackDetector,
+  VideoDecoderIssueDetector,
 } from 'webrtc-issue-detector';
 
 const widWithDefaultConstructorArgs = new WebRTCIssueDetector();
@@ -68,14 +67,13 @@ const widWithDefaultConstructorArgs = new WebRTCIssueDetector();
 const widWithCustomConstructorArgs = new WebRTCIssueDetector({
   detectors: [ // you are free to change the detectors list according to your needs
     new QualityLimitationsIssueDetector(),
-    new FramesDroppedIssueDetector(),
-    new FramesEncodedSentIssueDetector(),
     new InboundNetworkIssueDetector(),
     new OutboundNetworkIssueDetector(),
     new NetworkMediaSyncIssueDetector(),
     new AvailableOutgoingBitrateIssueDetector(),
     new UnknownVideoDecoderImplementationDetector(),
     new FrozenVideoTrackDetector(),
+    new VideoDecoderIssueDetector(),
   ],
   getStatsInterval: 10_000, // set custom stats parsing interval
   onIssues: (payload: IssueDetectorResult) => {
@@ -106,34 +104,18 @@ const exampleIssue = {
 }
 ```
 
-### FramesDroppedIssueDetector
+### VideoDecoderIssueDetector
 Detects issues with decoder.
 ```js
 const exampleIssue = {
     type: 'cpu',
     reason: 'decoder-cpu-throttling',
     statsSample: {
-      deltaFramesDropped: 100,
-      deltaFramesReceived: 1000,
-      deltaFramesDecoded: 900,
-      framesDroppedPct: 10,
+      affectedStreamsPercent: 67,
+      throtthedStreams: [
+        { ssrc: 123, allDecodeTimePerFrame: [1.2, 1.6, 1.9, 2.4, 2.9], volatility: 1.7 },
+      ]
     },
-    ssrc: 1234,
-}
-```
-
-### FramesEncodedSentIssueDetector
-Detects issues with outbound network throughput.
-```js
-const exampleIssue = {
-    type: 'network',
-    reason: 'outbound-network-throughput',
-    statsSample: {
-      deltaFramesSent: 900,
-      deltaFramesEncoded: 1000,
-      missedFramesPct: 10,
-    },
-    ssrc: 1234,
 }
 ```
 
