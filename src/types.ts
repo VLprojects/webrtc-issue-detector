@@ -83,6 +83,8 @@ export enum IssueReason {
   LowInboundMOS = 'low-inbound-mean-opinion-score',
   LowOutboundMOS = 'low-outbound-mean-opinion-score',
   FrozenVideoTrack = 'frozen-video-track',
+  MissingVideoStreamData = 'missing-video-stream-data',
+  MissingAudioStreamData = 'missing-audio-stream-data',
 }
 
 export type IssuePayload = {
@@ -445,3 +447,15 @@ export enum MosQuality {
 }
 
 export type WebRTCStatsParsedWithNetworkScores = WebRTCStatsParsed & { networkScores: NetworkScores };
+
+type CommonKeys<T, U> = Extract<keyof T, keyof U>;
+
+type CommonFields<T, U> = {
+  [K in CommonKeys<T, U>]: T[K] extends object
+    ? U[K] extends object
+      ? CommonFields<T[K], U[K]> // Recursively check nested objects
+      : never
+    : T[K];
+};
+
+export type CommonParsedInboundStreamStats = CommonFields<ParsedInboundVideoStreamStats, ParsedInboundAudioStreamStats>;
