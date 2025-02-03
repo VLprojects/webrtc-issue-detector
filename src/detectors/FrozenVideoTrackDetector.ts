@@ -105,6 +105,9 @@ class FrozenVideoTrackDetector extends BaseIssueDetector {
           ssrcs: frozenStreams.map((stream) => stream.ssrc),
         },
       });
+
+      // clear all processed stats for this connection to avoid duplicate issues
+      this.deleteLastProcessedStats(data.connection.id);
     }
 
     return issues;
