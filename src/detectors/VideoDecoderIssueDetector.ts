@@ -15,6 +15,8 @@ interface VideoDecoderIssueDetectorParams extends BaseIssueDetectorParams {
   minMosQuality?: number;
 }
 
+const MIN_STATS_HISTORY_LENGTH = 5;
+
 class VideoDecoderIssueDetector extends BaseIssueDetector {
   readonly #volatilityThreshold: number;
 
@@ -58,7 +60,7 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
     const throtthedStreams = data.video.inbound
       .map((incomeVideoStream): { ssrc: number, allFps: number[], volatility: number } | undefined => {
         // At least 5 elements needed to have enough representation
-        if (allProcessedStats.length < 5) {
+        if (allProcessedStats.length < MIN_STATS_HISTORY_LENGTH) {
           return undefined;
         }
 
@@ -78,7 +80,7 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
           }
         }
 
-        if (allFps.length === 0) {
+        if (allFps.length < MIN_STATS_HISTORY_LENGTH) {
           return undefined;
         }
 
