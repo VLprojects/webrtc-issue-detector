@@ -1,4 +1,5 @@
 import { WebRTCStatsParsedWithNetworkScores } from '../types';
+import { calculateStandardDeviation } from './calc';
 
 export const isDtxLikeBehavior = (
   ssrc: number,
@@ -6,10 +7,14 @@ export const isDtxLikeBehavior = (
   stdDevThreshold = 30,
 ): boolean => {
   const frameIntervals: number[] = [];
-  for (let i = 0; i < allProcessedStats.length - 1; i += 1) {
-    const videoStreamStats = allProcessedStats[i].video.inbound.find(
+  for (let i = 1; i < allProcessedStats.length - 1; i += 1) {
+    const videoStreamStats = allProcessedStats[i]?.video?.inbound.find(
       (stream) => stream.ssrc === ssrc,
     );
+
+    if (!videoStreamStats) {
+      continue;
+    }
 
     const previousVideoStreamStats = allProcessedStats[i - 1]?.video?.inbound?.find(
       (stream) => stream.ssrc === ssrc,
@@ -32,9 +37,6 @@ export const isDtxLikeBehavior = (
     return false;
   }
 
-  const mean = frameIntervals.reduce((a, b) => a + b, 0) / frameIntervals.length;
-  const variance = frameIntervals
-    .reduce((sum, val) => sum + (val - mean) ** 2, 0) / frameIntervals.length;
-  const stdDev = Math.sqrt(variance);
+  const stdDev = calculateStandardDeviation(frameIntervals);
   return stdDev > stdDevThreshold;
 };
