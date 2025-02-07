@@ -1,3 +1,4 @@
+import { isDtxLikeBehavior } from '../helpers/streams';
 import {
   IssueDetectorResult,
   IssueReason,
@@ -68,6 +69,12 @@ class FrozenVideoTrackDetector extends BaseIssueDetector {
         ]);
 
         if (isSpatialLayerChanged) {
+          return undefined;
+        }
+
+        const isDtx = isDtxLikeBehavior(videoStream.ssrc, allLastProcessedStats);
+        if (isDtx) {
+          // DTX-like behavior detected, ignoring freezes check
           return undefined;
         }
 
