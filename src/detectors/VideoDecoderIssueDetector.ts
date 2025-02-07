@@ -1,4 +1,5 @@
 import { calculateVolatility } from '../helpers/calc';
+import { isDtxLikeBehavior } from '../helpers/streams';
 import {
   IssueDetectorResult,
   IssueReason,
@@ -81,6 +82,12 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
         }
 
         if (allFps.length < MIN_STATS_HISTORY_LENGTH) {
+          return undefined;
+        }
+
+        const isDtx = isDtxLikeBehavior(incomeVideoStream.ssrc, allProcessedStats);
+        if (isDtx) {
+          // DTX-like behavior detected, ignoring FPS volatility check
           return undefined;
         }
 
