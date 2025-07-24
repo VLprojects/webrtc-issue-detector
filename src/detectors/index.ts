@@ -7,3 +7,4 @@ export { default as QualityLimitationsIssueDetector } from './QualityLimitations
 export { default as UnknownVideoDecoderImplementationDetector } from './UnknownVideoDecoderImplementationDetector';
 export { default as FrozenVideoTrackDetector } from './FrozenVideoTrackDetector';
 export { default as VideoDecoderIssueDetector } from './VideoDecoderIssueDetector';
+export { default as MissingStreamDataDetector } from './MissingStreamDataDetector';

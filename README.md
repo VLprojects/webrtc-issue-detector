@@ -58,6 +58,7 @@ import WebRTCIssueDetector, {
   UnknownVideoDecoderImplementationDetector,
   FrozenVideoTrackDetector,
   VideoDecoderIssueDetector,
+  MissingStreamDataDetector
 } from 'webrtc-issue-detector';
 
 const widWithDefaultConstructorArgs = new WebRTCIssueDetector();
@@ -74,6 +75,7 @@ const widWithCustomConstructorArgs = new WebRTCIssueDetector({
     new UnknownVideoDecoderImplementationDetector(),
     new FrozenVideoTrackDetector(),
     new VideoDecoderIssueDetector(),
+    new MissingStreamDataDetector(),
   ],
   getStatsInterval: 10_000, // set custom stats parsing interval
   onIssues: (payload: IssueDetectorResult) => {
