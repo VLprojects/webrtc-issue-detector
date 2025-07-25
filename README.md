@@ -202,7 +202,7 @@ const exampleIssue = {
 }
 ```
 
-### VideoCodecMismatchDetector
+### UnknownVideoDecoderImplementationDetector
 Detects issues with decoding stream.
 ```js
 const exampleIssue = {
