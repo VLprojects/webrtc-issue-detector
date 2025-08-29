@@ -19,7 +19,7 @@ class OutboundNetworkIssueDetector extends BaseIssueDetector {
   constructor(params: OutboundNetworkIssueDetectorParams = {}) {
     super();
     this.#highPacketLossThresholdPct = params.highPacketLossThresholdPct ?? 5;
-    this.#highJitterThreshold = params.highJitterThreshold ?? 200;
+    this.#highJitterThreshold = params.highJitterThreshold ?? 0.2;
   }
 
   performDetection(data: WebRTCStatsParsed): IssueDetectorResult {

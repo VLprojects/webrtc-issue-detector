@@ -25,7 +25,7 @@ class InboundNetworkIssueDetector extends BaseIssueDetector {
   constructor(params: InboundNetworkIssueDetectorParams = {}) {
     super();
     this.#highPacketLossThresholdPct = params.highPacketLossThresholdPct ?? 5;
-    this.#highJitterThreshold = params.highJitterThreshold ?? 200;
+    this.#highJitterThreshold = params.highJitterThreshold ?? 0.2;
     this.#highJitterBufferDelayThresholdMs = params.highJitterBufferDelayThresholdMs ?? 500;
     this.#highRttThresholdMs = params.highRttThresholdMs ?? 250;
   }
