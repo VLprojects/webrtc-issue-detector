@@ -80,7 +80,7 @@ class NetworkScoresCalculator implements INetworkScoresCalculator {
 
     const rtt = (1e3 * data.connection.currentRoundTripTime) || 0;
     const { sumJitter } = rtpNetworkStats;
-    const avgJitter = sumJitter / remoteInboundRTPStreamsStats.length;
+    const avgJitter = (sumJitter / remoteInboundRTPStreamsStats.length) * 1e3;
 
     const deltaPacketSent = packetsSent - lastPacketsSent;
     const deltaPacketLost = rtpNetworkStats.packetsLost - rtpNetworkStats.lastPacketsLost;
@@ -126,7 +126,7 @@ class NetworkScoresCalculator implements INetworkScoresCalculator {
 
     const rtt = (1e3 * data.connection.currentRoundTripTime) || 0;
     const { sumJitter } = rtpNetworkStats;
-    const avgJitter = sumJitter / inboundRTPStreamsStats.length;
+    const avgJitter = (sumJitter / inboundRTPStreamsStats.length) * 1e3;
 
     const deltaPacketReceived = packetsReceived - lastPacketsReceived;
     const deltaPacketLost = rtpNetworkStats.packetsLost - rtpNetworkStats.lastPacketsLost;
@@ -146,10 +146,10 @@ class NetworkScoresCalculator implements INetworkScoresCalculator {
     { avgJitter, rtt, packetsLoss }:
     { avgJitter: number, rtt: number, packetsLoss: number },
   ): number {
-    const effectiveLatency = rtt + (avgJitter * 2) + 10;
+    const effectiveLatency = (rtt + avgJitter) * 2 + 10;
     let rFactor = effectiveLatency < 160
       ? 93.2 - (effectiveLatency / 40)
-      : 93.2 - (effectiveLatency / 120) - 10;
+      : 93.2 - (effectiveLatency / 120) / 10;
     rFactor -= (packetsLoss * 2.5);
     return 1 + (0.035) * rFactor + (0.000007) * rFactor * (rFactor - 60) * (100 - rFactor);
   }
