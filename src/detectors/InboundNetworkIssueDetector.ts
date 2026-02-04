@@ -74,7 +74,7 @@ class InboundNetworkIssueDetector extends BaseIssueDetector {
 
     const rtt = (1e3 * data.connection.currentRoundTripTime) || 0;
     const { sumJitter, sumJitterBufferDelayMs } = rtpNetworkStats;
-    const avgJitter = sumJitter / inboundRTPStreamsStats.length;
+    const avgJitter = (1e3 * sumJitter) / inboundRTPStreamsStats.length;
     const avgJitterBufferDelay = sumJitterBufferDelayMs / inboundRTPStreamsStats.length;
 
     const deltaPacketReceived = packetsReceived - lastPacketsReceived;
