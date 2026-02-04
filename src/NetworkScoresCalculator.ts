@@ -149,7 +149,7 @@ class NetworkScoresCalculator implements INetworkScoresCalculator {
     const effectiveLatency = rtt + (avgJitter * 2) + 10;
     let rFactor = effectiveLatency < 160
       ? 93.2 - (effectiveLatency / 40)
-      : 93.2 - (effectiveLatency / 120) - 10;
+      : 93.2 - (effectiveLatency - 120) / 10;
     rFactor -= (packetsLoss * 2.5);
     const mos = 1 + (0.035) * rFactor + (0.000007) * rFactor * (rFactor - 60) * (100 - rFactor);
     return Math.max(0, Math.min(5, mos));
