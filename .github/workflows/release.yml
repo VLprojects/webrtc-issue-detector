@@ -5,6 +5,12 @@ on:
     branches: [ master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -16,9 +22,9 @@ jobs:
           persist-credentials: false
 
       - name: Use Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6.1.0
         with:
-          node-version: '20'
+          node-version: 24
           cache: 'yarn'
 
       - name: Install packages
@@ -38,10 +44,5 @@ jobs:
 
       - name: Release
         env:
-          GITHUB_TOKEN: ${{ secrets.VL_BOT_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          GIT_AUTHOR_NAME: vlprojects-bot
-          GIT_AUTHOR_EMAIL: info@vlprojects.pro
-          GIT_COMMITTER_NAME: vlprojects-bot
-          GIT_COMMITTER_EMAIL: info@vlprojects.pro
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx semantic-release
