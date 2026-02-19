@@ -292,6 +292,8 @@ export type ParsedOutboundVideoStreamStats = {
   headerBytesSent: number,
   hugeFramesSent: number,
   id: string,
+  mid: string;
+  active: boolean;
   keyFramesEncoded: number,
   kind: string,
   mediaSourceId: string,
