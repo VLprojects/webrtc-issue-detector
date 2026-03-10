@@ -15,6 +15,11 @@ export const calculateVolatility = (values: number[]) => {
   }
 
   const mean = calculateMean(values);
+
+  if (mean === 0) {
+    return 0;
+  }
+
   const meanAbsoluteDeviationFps = values.reduce((acc, val) => acc + Math.abs(val - mean), 0) / values.length;
   return (meanAbsoluteDeviationFps * 100) / mean;
 };

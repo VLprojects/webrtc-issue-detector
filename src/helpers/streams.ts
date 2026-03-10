@@ -7,7 +7,8 @@ export const isDtxLikeBehavior = (
   stdDevThreshold = 30,
 ): boolean => {
   const frameIntervals: number[] = [];
-  for (let i = 1; i < allProcessedStats.length - 1; i += 1) {
+
+  for (let i = 1; i < allProcessedStats.length; i += 1) {
     const videoStreamStats = allProcessedStats[i]?.video?.inbound.find(
       (stream) => stream.ssrc === ssrc,
     );

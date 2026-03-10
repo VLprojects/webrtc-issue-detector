@@ -17,7 +17,7 @@ class OutboundNetworkIssueDetector extends BaseIssueDetector {
   readonly #highJitterThreshold: number;
 
   constructor(params: OutboundNetworkIssueDetectorParams = {}) {
-    super();
+    super(params);
     this.#highPacketLossThresholdPct = params.highPacketLossThresholdPct ?? 5;
     this.#highJitterThreshold = params.highJitterThreshold ?? 200;
   }
@@ -79,7 +79,7 @@ class OutboundNetworkIssueDetector extends BaseIssueDetector {
     const isHighPacketsLoss = packetLossPct > this.#highPacketLossThresholdPct;
     const isHighJitter = avgJitter >= this.#highJitterThreshold;
     const isNetworkMediaLatencyIssue = isHighPacketsLoss && isHighJitter;
-    const isNetworkIssue = (!isHighPacketsLoss && isHighJitter) || isHighJitter || isHighPacketsLoss;
+    const isNetworkIssue = isHighJitter || isHighPacketsLoss;
 
     const statsSample = {
       rtt,

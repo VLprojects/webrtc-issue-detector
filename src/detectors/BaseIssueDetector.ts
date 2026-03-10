@@ -5,7 +5,7 @@ import {
   WebRTCStatsParsed,
   WebRTCStatsParsedWithNetworkScores,
 } from '../types';
-import { scheduleTask } from '../utils/tasks';
+import { createTaskScheduler } from '../utils/tasks';
 import { CLEANUP_PREV_STATS_TTL_MS, MAX_PARSED_STATS_STORAGE_SIZE } from '../utils/constants';
 
 export interface PrevStatsCleanupPayload {
@@ -24,6 +24,8 @@ abstract class BaseIssueDetector implements IssueDetector {
   readonly #statsCleanupDelayMs: number;
 
   readonly #maxParsedStatsStorageSize: number;
+
+  readonly #scheduleTask = createTaskScheduler();
 
   constructor(params: BaseIssueDetectorParams = {}) {
     this.#statsCleanupDelayMs = params.statsCleanupTtlMs ?? CLEANUP_PREV_STATS_TTL_MS;
@@ -57,7 +59,7 @@ abstract class BaseIssueDetector implements IssueDetector {
       return;
     }
 
-    scheduleTask({
+    this.#scheduleTask({
       taskId: connectionId,
       delayMs: this.#statsCleanupDelayMs,
       callback: () => {

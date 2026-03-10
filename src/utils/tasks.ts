@@ -26,5 +26,3 @@ export const createTaskScheduler = () => {
     scheduledTasks.set(taskId, newTimer);
   };
 };
-
-export const scheduleTask = createTaskScheduler();
