@@ -6,7 +6,7 @@ import {
   WebRTCStatsParsed,
   NetworkQualityStatsSample,
 } from './types';
-import { scheduleTask } from './utils/tasks';
+import { createTaskScheduler } from './utils/tasks';
 import { CLEANUP_PREV_STATS_TTL_MS } from './utils/constants';
 
 type MosCalculatorResult = {
@@ -17,13 +17,15 @@ type MosCalculatorResult = {
 class NetworkScoresCalculator implements INetworkScoresCalculator {
   #lastProcessedStats: { [connectionId: string]: WebRTCStatsParsed } = {};
 
+  readonly #scheduleTask = createTaskScheduler();
+
   calculate(data: WebRTCStatsParsed): NetworkScores {
     const { connection: { id: connectionId } } = data;
     const { mos: outbound, stats: outboundStatsSample } = this.calculateOutboundScore(data) || {};
     const { mos: inbound, stats: inboundStatsSample } = this.calculateInboundScore(data) || {};
     this.#lastProcessedStats[connectionId] = data;
 
-    scheduleTask({
+    this.#scheduleTask({
       taskId: connectionId,
       delayMs: CLEANUP_PREV_STATS_TTL_MS,
       callback: () => (delete this.#lastProcessedStats[connectionId]),

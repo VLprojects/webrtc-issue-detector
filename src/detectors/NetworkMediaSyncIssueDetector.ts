@@ -14,7 +14,7 @@ class NetworkMediaSyncIssueDetector extends BaseIssueDetector {
   readonly #correctedSamplesThresholdPct: number;
 
   constructor(params: NetworkMediaSyncIssueDetectorParams = {}) {
-    super();
+    super(params);
     this.#correctedSamplesThresholdPct = params.correctedSamplesThresholdPct ?? 5;
   }
 
@@ -47,6 +47,11 @@ class NetworkMediaSyncIssueDetector extends BaseIssueDetector {
       }
 
       const deltaSamplesReceived = stats.track.totalSamplesReceived - previousStreamStats.track.totalSamplesReceived;
+
+      if (deltaSamplesReceived === 0) {
+        return;
+      }
+
       const deltaCorrectedSamples = nowCorrectedSamples - lastCorrectedSamples;
       const correctedSamplesPct = Math.round((deltaCorrectedSamples * 100) / deltaSamplesReceived);
       const statsSample = {

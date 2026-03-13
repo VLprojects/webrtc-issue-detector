@@ -15,7 +15,7 @@ import {
   Logger,
 } from '../types';
 import { checkIsConnectionClosed, calcBitrate } from './utils';
-import { scheduleTask } from '../utils/tasks';
+import { createTaskScheduler } from '../utils/tasks';
 import { CLEANUP_PREV_STATS_TTL_MS } from '../utils/constants';
 
 interface PrevStatsItem {
@@ -30,6 +30,8 @@ interface WebRTCStatsParserParams {
 
 class RTCStatsParser implements StatsParser {
   private readonly prevStats = new Map<string, PrevStatsItem | undefined>();
+
+  private readonly scheduleTask = createTaskScheduler();
 
   private readonly allowedReportTypes: Set<RTCStatsType> = new Set<RTCStatsType>([
     'candidate-pair',
@@ -133,7 +135,7 @@ class RTCStatsParser implements StatsParser {
       ts: Date.now(),
     });
 
-    scheduleTask({
+    this.scheduleTask({
       taskId: connectionId,
       delayMs: CLEANUP_PREV_STATS_TTL_MS,
       callback: () => (this.prevStats.delete(connectionId)),
