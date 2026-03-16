@@ -110,6 +110,7 @@ class FrozenVideoTrackDetector extends BaseIssueDetector {
         reason: IssueReason.FrozenVideoTrack,
         statsSample: {
           ssrcs: frozenStreams.map((stream) => stream.ssrc),
+          streams: frozenStreams,
         },
       });
 
