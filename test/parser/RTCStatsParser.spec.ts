@@ -5,10 +5,11 @@ import { expect } from 'chai';
 import RTCStatsParser from '../../src/parser/RTCStatsParser';
 import createLogger from '../../src/utils/logger';
 import { ConnectionInfo, Logger } from '../../src';
-import { createPeerConnectionFake } from '../utils/rtc';
+import { createPeerConnectionFake, createOutboundAudioRtcStatsReport, createMediaStreamTrack, createRTCRtpSender } from '../utils/rtc';
 
 interface CreateParserTestPayload {
   logger?: Logger;
+  includeDisabledAudioSenders?: boolean;
 }
 
 type CreatePayloadPayload = Partial<RTCPeerConnection & {
@@ -19,6 +20,7 @@ type CreatePayloadPayload = Partial<RTCPeerConnection & {
 
 const createParser = (payload: CreateParserTestPayload = {}): RTCStatsParser => new RTCStatsParser({
   logger: payload.logger ?? createLogger(),
+  includeDisabledAudioSenders: payload.includeDisabledAudioSenders,
 });
 
 const createPayload = (payload: CreatePayloadPayload = {}): ConnectionInfo => {
@@ -148,5 +150,61 @@ describe('wid/lib/parser/RTCStatsParser', () => {
 
     expect(result).to.be.undefined;
     expect(loggerSpy.error).to.be.calledOnceWith('Failed to get stats for PC');
+  });
+
+  describe('sender selection for getStats()', () => {
+    const mutedAudioTrack = createMediaStreamTrack('audio', false);
+    const mutedVideoTrack = createMediaStreamTrack('video', false);
+    const audioBytesSent = faker.datatype.number({ min: 1000, max: 99999 });
+
+    const mutedAudioSender = createRTCRtpSender({
+      track: mutedAudioTrack,
+      getStats: async () => createOutboundAudioRtcStatsReport(audioBytesSent),
+    });
+
+    const mutedVideoSender = createRTCRtpSender({
+      track: mutedVideoTrack,
+      getStats: async () => createOutboundAudioRtcStatsReport(audioBytesSent),
+    });
+
+    it('should skip disabled audio sender by default', async () => {
+      const parser = createParser();
+      const getStatsSpy = sandbox.spy(mutedAudioSender, 'getStats');
+      const payload = createPayload({
+        rtpSenders: [mutedAudioSender],
+      });
+
+      const result = await parser.parse(payload);
+
+      expect(getStatsSpy).to.not.be.called;
+      expect(result?.stats.audio.outbound).to.deep.eq([]);
+    });
+
+    it('should poll disabled audio sender when includeDisabledAudioSenders is true', async () => {
+      const parser = createParser({ includeDisabledAudioSenders: true });
+      const getStatsSpy = sandbox.spy(mutedAudioSender, 'getStats');
+      const payload = createPayload({
+        rtpSenders: [mutedAudioSender],
+      });
+
+      const result = await parser.parse(payload);
+
+      expect(getStatsSpy).to.be.calledOnce;
+      expect(result?.stats.audio.outbound).to.have.length(1);
+      expect(result?.stats.audio.outbound[0].bytesSent).to.eq(audioBytesSent);
+    });
+
+    it('should still skip disabled video sender when includeDisabledAudioSenders is true', async () => {
+      const parser = createParser({ includeDisabledAudioSenders: true });
+      const getStatsSpy = sandbox.spy(mutedVideoSender, 'getStats');
+      const payload = createPayload({
+        rtpSenders: [mutedVideoSender],
+      });
+
+      const result = await parser.parse(payload);
+
+      expect(getStatsSpy).to.not.be.called;
+      expect(result?.stats.video.outbound).to.deep.eq([]);
+    });
   });
 });

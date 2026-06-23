@@ -57,6 +57,39 @@ export const createRTCStatsReport = (reportItems?: Map<string, Record<string, un
   };
 };
 
+export const createMediaStreamTrack = (
+  kind: 'audio' | 'video',
+  enabled: boolean,
+): MediaStreamTrack => ({
+  kind,
+  enabled,
+} as MediaStreamTrack);
+
+export const createRTCRtpSender = (payload: Partial<RTCRtpSender> = {}): RTCRtpSender => ({
+  track: payload.track ?? null as unknown as MediaStreamTrack,
+  transport: payload.transport ?? null as unknown as RTCDtlsTransport,
+  dtmf: payload.dtmf ?? null,
+  getStats: payload.getStats ?? (async () => createRTCStatsReport()),
+  getParameters: payload.getParameters ?? ((): RTCRtpSendParameters => ({}) as RTCRtpSendParameters),
+  replaceTrack: payload.replaceTrack ?? (async () => {}),
+  setParameters: payload.setParameters ?? (async () => {}),
+  setStreams: payload.setStreams ?? (() => {}),
+});
+
+export const createOutboundAudioRtcStatsReport = (bytesSent: number): RTCStatsReport => createRTCStatsReport(
+  new Map([
+    ['outbound-audio', {
+      type: 'outbound-rtp',
+      kind: 'audio',
+      mediaType: 'audio',
+      id: 'outbound-audio',
+      bytesSent,
+      packetsSent: 100,
+      timestamp: Date.now(),
+    }],
+  ]),
+);
+
 export const createRTCRtpReceiver = (payload: Partial<RTCRtpReceiver> = {}): RTCRtpReceiver => ({
   track: payload.track ?? null as unknown as MediaStreamTrack,
   transport: payload.transport ?? null as unknown as RTCDtlsTransport,
