@@ -107,16 +107,50 @@ const exampleIssue = {
 ```
 
 ### VideoDecoderIssueDetector
-Detects issues with decoder.
+Detects a saturated local video decoder, per peer connection. Fires when more than
+`frameShortfallPctThreshold` (default `10`) percent of the received video frames were not decoded on
+this device, more than `affectedStreamsPercentThreshold` (default `30`) percent of the inbound
+video streams show such a shortfall of their own, the inbound streams together demand more than
+`decodeDemandThreshold` (default `0.7`, share of wall clock) of decoder time, and at least one of
+the affected streams needs more than `affectedStreamDemandThreshold` (default `0.3`) on its own.
+The summed threshold is a load proxy: browsers decode streams on separate threads, so many cheap
+streams can reach it on an idle machine, which is why the per-stream condition exists. Streams with
+more than `maxPacketLossPct` (default `2`) percent packet loss, with mean RTP jitter above
+`maxJitterMs` (default `30`), decoded in hardware (`powerEfficientDecoder: true`), or with no
+decoded frames in the window are ignored. Frames dropped after decoding do not count. Browsers drop
+a frame before decoding only when a later frame can be decoded without it, so this detector covers
+streams with temporal layers (simulcast or SVC, the normal case through an SFU) and stays silent on
+single-layer streams such as peer-to-peer VP8 without simulcast or H.264, where an overloaded
+receiver decodes every frame late instead. The detector needs a history window of at least
+`minWindowMs` (default `15000`). The default storage keeps 5 previous samples, so the window spans
+at most 5 poll intervals; if you poll faster than every 3 seconds, raise `maxParsedStatsStorageSize`
+on this detector so the window can reach that span. It reads `id`,
+`timestamp`, `framesReceived`, `framesDecoded`, `totalDecodeTime`, `packetsReceived`,
+`packetsLost`, and `jitter` from the inbound video stats and stays silent on a browser that omits
+any of them. Firefox reports all of them but not `powerEfficientDecoder`, so the hardware-decode
+exclusion does not apply there and a Firefox receiver that decodes in hardware can reach the demand
+thresholds on pipeline latency alone. A remote sender that lowers its frame rate does not trigger
+this issue.
+`volatilityThreshold` is accepted but has no effect since the frame rate volatility signal was
+removed.
 ```js
 const exampleIssue = {
     type: 'cpu',
     reason: 'decoder-cpu-throttling',
     statsSample: {
-      affectedStreamsPercent: 67,
-      throtthedStreams: [
-        { ssrc: 123, allDecodeTimePerFrame: [1.2, 1.6, 1.9, 2.4, 2.9], volatility: 1.7 },
-      ]
+      decodeDemand: 1.8,           // sum over evaluated streams, 1 = one full second of decode per second
+      frameShortfallPct: 40,       // received frames not decoded locally, percent
+      windowMs: 20000,
+      affectedStreamsPercent: 100, // percent of inbound video streams with their own shortfall
+      evaluatedStreams: [ /* one entry per evaluated stream, same shape as below */ ],
+      throttledStreams: [          // only the streams with their own shortfall
+        {
+          ssrc: 123, decodeDemand: 0.6, avgDecodeTimeMs: 20, arrivalFps: 30, decodedFps: 18,
+          shortfallPct: 40, packetLossPct: 0, jitterMs: 5,
+          allFps: [18, 18, 18, 18], volatility: 0, // deprecated, informational only
+        },
+      ],
+      throtthedStreams: [ /* deprecated misspelled alias of throttledStreams, removed in the next major */ ],
     },
 }
 ```
