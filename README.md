@@ -107,16 +107,22 @@ const exampleIssue = {
 ```
 
 ### VideoDecoderIssueDetector
-Detects issues with decoder.
+Detects local decoder saturation using inbound decode demand and local frame shortfall.
 ```js
 const exampleIssue = {
     type: 'cpu',
     reason: 'decoder-cpu-throttling',
     statsSample: {
+      decodeDemand: 0.82,
+      frameShortfallPct: 40,
       affectedStreamsPercent: 67,
-      throtthedStreams: [
-        { ssrc: 123, allDecodeTimePerFrame: [1.2, 1.6, 1.9, 2.4, 2.9], volatility: 1.7 },
+      evaluatedStreams: [
+        { ssrc: 123, decodeDemand: 0.6, shortfallPct: 40, arrivalFps: 30, decodedFps: 18, allFps: [18, 18, 18, 18], volatility: 0 },
       ]
+      throttledStreams: [
+        { ssrc: 123, decodeDemand: 0.6, shortfallPct: 40, arrivalFps: 30, decodedFps: 18, allFps: [18, 18, 18, 18], volatility: 0 },
+      ],
+      throtthedStreams: [/* deprecated alias for throttledStreams */],
     },
 }
 ```
