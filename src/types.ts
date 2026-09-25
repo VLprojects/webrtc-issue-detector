@@ -57,6 +57,11 @@ export type WebRTCIssueDetectorConstructorParams = {
   onNetworkScoresUpdated?: (payload: NetworkScores) => void,
   onStats?: (payload: StatsReportItem[]) => void,
   ignoreSSRCList?: number[],
+  /**
+   * Poll outbound audio senders via getStats() even when MediaStreamTrack.enabled is false.
+   * @default false
+   */
+  includeDisabledAudioSenders?: boolean,
   getStatsInterval?: number,
   autoAddPeerConnections?: boolean,
 };

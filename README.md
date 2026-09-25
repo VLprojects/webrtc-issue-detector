@@ -90,8 +90,11 @@ const widWithCustomConstructorArgs = new WebRTCIssueDetector({
   ignoreSSRCList: [
     // in case you need to skip some ssrc from parsing, add its numbers to the array
   ],
+  includeDisabledAudioSenders: true, // poll outbound audio stats while microphone is muted (track.enabled = false)
 });
 ```
+
+`includeDisabledAudioSenders` (default: `false`) keeps collecting `audio.outbound.bytesSent` from `getStats()` when the local microphone is muted. Without it, muted audio senders are excluded from polling and outbound audio stats disappear until unmute.
 
 ## Detectors
 

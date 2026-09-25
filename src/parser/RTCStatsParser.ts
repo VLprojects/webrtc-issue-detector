@@ -26,6 +26,11 @@ interface PrevStatsItem {
 interface WebRTCStatsParserParams {
   ignoreSSRCList?: number[];
   logger: Logger;
+  /**
+   * When true, outbound audio senders are polled via getStats() even if MediaStreamTrack.enabled is false.
+   * Muted microphone still sends RTP (silence/DTX); this keeps audio.outbound.bytesSent available.
+   */
+  includeDisabledAudioSenders?: boolean;
 }
 
 class RTCStatsParser implements StatsParser {
@@ -45,10 +50,13 @@ class RTCStatsParser implements StatsParser {
 
   private readonly ignoreSSRCList: number[];
 
+  private readonly includeDisabledAudioSenders: boolean;
+
   private readonly logger: Logger;
 
   constructor(params: WebRTCStatsParserParams) {
     this.ignoreSSRCList = params.ignoreSSRCList ?? [];
+    this.includeDisabledAudioSenders = params.includeDisabledAudioSenders ?? false;
     this.logger = params.logger;
   }
 
@@ -71,11 +79,11 @@ class RTCStatsParser implements StatsParser {
     try {
       const beforeGetStats = Date.now();
 
-      const recieversWithActiveTracks = pc.getReceivers().filter((r) => r.track?.enabled);
-      const sendersWithActiveTracks = pc.getSenders().filter((s) => s.track?.enabled);
+      const receiversForStats = this.getReceiversForStats(pc);
+      const sendersForStats = this.getSendersForStats(pc);
 
-      const receiversStats = await Promise.all(recieversWithActiveTracks.map((r) => r.getStats()));
-      const sendersStats = await Promise.all(sendersWithActiveTracks.map((r) => r.getStats()));
+      const receiversStats = await Promise.all(receiversForStats.map((r) => r.getStats()));
+      const sendersStats = await Promise.all(sendersForStats.map((s) => s.getStats()));
 
       const stats = this.mapReportsStats([...receiversStats, ...sendersStats], info);
 
@@ -88,6 +96,26 @@ class RTCStatsParser implements StatsParser {
       this.logger.error('Failed to get stats for PC', { id, pc, error });
       return undefined;
     }
+  }
+
+  private getReceiversForStats(pc: RTCPeerConnection): RTCRtpReceiver[] {
+    return pc.getReceivers().filter((receiver) => receiver.track?.enabled);
+  }
+
+  private getSendersForStats(pc: RTCPeerConnection): RTCRtpSender[] {
+    return pc.getSenders().filter((sender) => {
+      const { track } = sender;
+
+      if (!track) {
+        return false;
+      }
+
+      if (track.enabled) {
+        return true;
+      }
+
+      return this.includeDisabledAudioSenders && track.kind === 'audio';
+    });
   }
 
   private mapReportsStats(reports: RTCStatsReport[], connectionData: ConnectionInfo): WebRTCStatsParsed {

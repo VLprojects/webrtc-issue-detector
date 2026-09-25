@@ -74,6 +74,7 @@ class WebRTCIssueDetector {
     this.compositeStatsParser = params.compositeStatsParser ?? new CompositeRTCStatsParser({
       statsParser: new RTCStatsParser({
         ignoreSSRCList: params.ignoreSSRCList,
+        includeDisabledAudioSenders: params.includeDisabledAudioSenders,
         logger: this.logger,
       }),
     });
