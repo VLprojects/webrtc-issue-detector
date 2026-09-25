@@ -13,22 +13,41 @@ import BaseIssueDetector, { BaseIssueDetectorParams } from './BaseIssueDetector'
 interface VideoDecoderIssueDetectorParams extends BaseIssueDetectorParams {
   volatilityThreshold?: number;
   affectedStreamsPercentThreshold?: number;
+  decodeDemandThreshold?: number;
+  affectedStreamDemandThreshold?: number;
+  frameShortfallPctThreshold?: number;
   minMosQuality?: number;
 }
 
 const MIN_STATS_HISTORY_LENGTH = 5;
 
-class VideoDecoderIssueDetector extends BaseIssueDetector {
-  readonly #volatilityThreshold: number;
+interface DecoderStreamStatsSample {
+  ssrc: number;
+  decodeDemand: number;
+  shortfallPct: number;
+  arrivalFps: number;
+  decodedFps: number;
+  allFps: number[];
+  volatility: number;
+}
 
+class VideoDecoderIssueDetector extends BaseIssueDetector {
   readonly #affectedStreamsPercentThreshold: number;
+
+  readonly #decodeDemandThreshold: number;
+
+  readonly #affectedStreamDemandThreshold: number;
+
+  readonly #frameShortfallPctThreshold: number;
 
   readonly #minMosQuality: MosQuality;
 
   constructor(params: VideoDecoderIssueDetectorParams = {}) {
     super(params);
-    this.#volatilityThreshold = params.volatilityThreshold ?? 8;
     this.#affectedStreamsPercentThreshold = params.affectedStreamsPercentThreshold ?? 30;
+    this.#decodeDemandThreshold = params.decodeDemandThreshold ?? 0.7;
+    this.#affectedStreamDemandThreshold = params.affectedStreamDemandThreshold ?? 0.3;
+    this.#frameShortfallPctThreshold = params.frameShortfallPctThreshold ?? 10;
     this.#minMosQuality = params.minMosQuality ?? MosQuality.BAD;
   }
 
@@ -58,8 +77,8 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
       data,
     ];
 
-    const throtthedStreams = data.video.inbound
-      .map((incomeVideoStream): { ssrc: number, allFps: number[], volatility: number } | undefined => {
+    const evaluatedStreams = data.video.inbound
+      .map((incomeVideoStream): DecoderStreamStatsSample | undefined => {
         // At least 5 elements needed to have enough representation
         if (allProcessedStats.length < MIN_STATS_HISTORY_LENGTH) {
           return undefined;
@@ -67,6 +86,41 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
 
         const isSpatialLayerChanged = isSvcSpatialLayerChanged(incomeVideoStream.ssrc, allProcessedStats);
         if (isSpatialLayerChanged) {
+          return undefined;
+        }
+
+        const streamStatsHistory = allProcessedStats
+          .map((stat) => stat.video.inbound.find((stream) => stream.ssrc === incomeVideoStream.ssrc))
+          .filter((stream): stream is NonNullable<typeof stream> => stream !== undefined);
+        if (streamStatsHistory.length < MIN_STATS_HISTORY_LENGTH) {
+          return undefined;
+        }
+
+        const firstStreamStats = streamStatsHistory[0];
+        const lastStreamStats = streamStatsHistory[streamStatsHistory.length - 1];
+        if (
+          firstStreamStats?.framesReceived === undefined
+          || firstStreamStats?.framesDecoded === undefined
+          || firstStreamStats?.totalDecodeTime === undefined
+          || firstStreamStats?.timestamp === undefined
+          || lastStreamStats?.framesReceived === undefined
+          || lastStreamStats?.framesDecoded === undefined
+          || lastStreamStats?.totalDecodeTime === undefined
+          || lastStreamStats?.timestamp === undefined
+        ) {
+          return undefined;
+        }
+
+        const deltaTimeSec = (lastStreamStats.timestamp - firstStreamStats.timestamp) / 1000;
+        const deltaFramesReceived = lastStreamStats.framesReceived - firstStreamStats.framesReceived;
+        const deltaFramesDecoded = lastStreamStats.framesDecoded - firstStreamStats.framesDecoded;
+        const deltaTotalDecodeTime = lastStreamStats.totalDecodeTime - firstStreamStats.totalDecodeTime;
+        if (
+          deltaTimeSec <= 0
+          || deltaFramesReceived <= 0
+          || deltaFramesDecoded <= 0
+          || deltaTotalDecodeTime <= 0
+        ) {
           return undefined;
         }
 
@@ -81,10 +135,6 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
           }
         }
 
-        if (allFps.length < MIN_STATS_HISTORY_LENGTH) {
-          return undefined;
-        }
-
         const isDtx = isDtxLikeBehavior(incomeVideoStream.ssrc, allProcessedStats);
         if (isDtx) {
           // DTX-like behavior detected, ignoring FPS volatility check
@@ -92,27 +142,58 @@ class VideoDecoderIssueDetector extends BaseIssueDetector {
         }
 
         const volatility = calculateVolatility(allFps);
+        const avgDecodeTimePerFrameSec = deltaTotalDecodeTime / deltaFramesDecoded;
+        const arrivalFps = deltaFramesReceived / deltaTimeSec;
+        const decodedFps = deltaFramesDecoded / deltaTimeSec;
+        const decodeDemand = avgDecodeTimePerFrameSec * arrivalFps;
+        const shortfallPct = ((deltaFramesReceived - deltaFramesDecoded) / deltaFramesReceived) * 100;
 
-        if (volatility > this.#volatilityThreshold) {
-          return { ssrc: incomeVideoStream.ssrc, allFps, volatility };
-        }
-
-        return undefined;
+        return {
+          ssrc: incomeVideoStream.ssrc,
+          decodeDemand,
+          shortfallPct,
+          arrivalFps,
+          decodedFps,
+          allFps,
+          volatility,
+        };
       })
-      .filter((throttledVideoStream) => Boolean(throttledVideoStream));
+      .filter((stream): stream is DecoderStreamStatsSample => stream !== undefined);
 
-    if (throtthedStreams.length === 0) {
+    if (evaluatedStreams.length === 0) {
       return issues;
     }
 
-    const affectedStreamsPercent = throtthedStreams.length / (data.video.inbound.length / 100);
-    if (affectedStreamsPercent > this.#affectedStreamsPercentThreshold) {
+    const throttledStreams = evaluatedStreams
+      .filter((stream) => (
+        stream.shortfallPct > this.#frameShortfallPctThreshold
+        && stream.decodeDemand > this.#affectedStreamDemandThreshold
+      ));
+
+    if (throttledStreams.length === 0) {
+      return issues;
+    }
+
+    const decodeDemand = evaluatedStreams.reduce((acc, stream) => acc + stream.decodeDemand, 0);
+    const frameShortfallPct = (
+      throttledStreams.reduce((acc, stream) => acc + stream.shortfallPct, 0)
+      / throttledStreams.length
+    );
+    const affectedStreamsPercent = throttledStreams.length / (data.video.inbound.length / 100);
+    if (
+      decodeDemand > this.#decodeDemandThreshold
+      && affectedStreamsPercent > this.#affectedStreamsPercentThreshold
+    ) {
       issues.push({
         type: IssueType.CPU,
         reason: IssueReason.DecoderCPUThrottling,
         statsSample: {
+          decodeDemand,
+          frameShortfallPct,
           affectedStreamsPercent,
-          throtthedStreams,
+          evaluatedStreams,
+          throttledStreams,
+          throtthedStreams: throttledStreams,
         },
       });
 
