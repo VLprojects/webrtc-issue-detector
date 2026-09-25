@@ -6,6 +6,9 @@ Diagnostic tool for WebRTC JS applications that analyzes WebRTC getStats() resul
 ## Key features
 
 - **Mean opinion score** - calculates [MOS](https://en.wikipedia.org/wiki/Mean_opinion_score) for inbound and outbound network connections that can indicate a problem before it even appears.
+  - The implementation is inspired by the ITU-T G.107 R-factor → MOS mapping, but it is not a full E-model implementation.
+  - R-factor is estimated heuristically from RTT, jitter and packet loss collected from WebRTC stats.
+  - Use it as a relative network quality signal for WebRTC RTP streams (audio/video), not as a standards-compliant telephony/video MOS value.
 - **CPU issues** - indicates possible issues with encoding and decoding media streams.
 - **Server issues** - indicates possible server side issues.
 - **Fully customizable** - allows to create your own detectors or WebRTC getStats() parsers.
