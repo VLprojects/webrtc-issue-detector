@@ -226,6 +226,7 @@ export type ParsedInboundVideoStreamStats = {
   clockRate: number,
   codecId: string,
   decoderImplementation: string,
+  powerEfficientDecoder?: boolean,
   firCount: number,
   frameHeight: number,
   frameWidth: number,
